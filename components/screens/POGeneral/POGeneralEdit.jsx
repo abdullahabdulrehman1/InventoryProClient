@@ -70,9 +70,10 @@ const POGeneralEdit = ({ navigation, route }) => {
   };
 
   const handleInputChange = (index, name, value) => {
-    const values = [...rows];
-    values[index][name] = value;
-    setRows(values);
+    const updatedRows = rows.map((row, i) =>
+      i === index ? { ...row, [name]: value } : row
+    );
+    setRows(updatedRows);
   };
 
   const handleSubmit = async () => {
@@ -132,14 +133,12 @@ const POGeneralEdit = ({ navigation, route }) => {
     }
   };
 
-   // In POGeneralEdit.jsx
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false);
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
         routes: [{ name: "POGeneral" }],
-        
       })
     );
   };
@@ -151,7 +150,9 @@ const POGeneralEdit = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate("POGeneralData")}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("POGeneralData")}
+          >
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.header}>Edit Purchase Order</Text>
@@ -256,12 +257,14 @@ const POGeneralEdit = ({ navigation, route }) => {
         {rows.map((row, index) => (
           <View key={index} style={styles.row}>
             <Text style={styles.rowLabel}>Row {index + 1}</Text>
+            <Text style={styles.rowFieldLabel}>PR No</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="PR No"
               value={row.prNo}
               onChangeText={(text) => handleInputChange(index, "prNo", text)}
             />
+            <Text style={styles.rowFieldLabel}>Department</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Department"
@@ -270,6 +273,7 @@ const POGeneralEdit = ({ navigation, route }) => {
                 handleInputChange(index, "department", text)
               }
             />
+            <Text style={styles.rowFieldLabel}>Category</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Category"
@@ -278,18 +282,21 @@ const POGeneralEdit = ({ navigation, route }) => {
                 handleInputChange(index, "category", text)
               }
             />
+            <Text style={styles.rowFieldLabel}>Item Name</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Item Name"
               value={row.name}
               onChangeText={(text) => handleInputChange(index, "name", text)}
             />
+            <Text style={styles.rowFieldLabel}>UOM</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="UOM"
               value={row.uom}
               onChangeText={(text) => handleInputChange(index, "uom", text)}
             />
+            <Text style={styles.rowFieldLabel}>Quantity</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Quantity"
@@ -299,6 +306,7 @@ const POGeneralEdit = ({ navigation, route }) => {
               }
               keyboardType="numeric"
             />
+            <Text style={styles.rowFieldLabel}>Rate</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Rate"
@@ -306,6 +314,7 @@ const POGeneralEdit = ({ navigation, route }) => {
               onChangeText={(text) => handleInputChange(index, "rate", text)}
               keyboardType="numeric"
             />
+            <Text style={styles.rowFieldLabel}>Discount Amount</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Discount Amount"
@@ -315,6 +324,7 @@ const POGeneralEdit = ({ navigation, route }) => {
               }
               keyboardType="numeric"
             />
+            <Text style={styles.rowFieldLabel}>Other Charges Amount</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Other Charges Amount"
@@ -324,6 +334,7 @@ const POGeneralEdit = ({ navigation, route }) => {
               }
               keyboardType="numeric"
             />
+            <Text style={styles.rowFieldLabel}>Remarks</Text>
             <TextInput
               style={styles.rowInput}
               placeholder="Remarks"
@@ -358,14 +369,6 @@ const POGeneralEdit = ({ navigation, route }) => {
             )}
           </TouchableOpacity>
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("POGeneralData")}
-          >
-            <Text style={styles.buttonText}>Show PO Data</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       <Modal
@@ -395,7 +398,6 @@ const POGeneralEdit = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: {
-    
     padding: 20,
     paddingTop: 10, // Add padding to the top
   },
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom:20,
+    marginBottom: 20,
   },
   buttonContainer: {
     borderRadius: 20,
@@ -450,6 +452,9 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontWeight: "bold",
+    marginBottom: 5,
+  },
+  rowFieldLabel: {
     marginBottom: 5,
   },
   rowInput: {

@@ -33,7 +33,10 @@ const AdminPanel = ({ navigation }) => {
       const response = await axios.get(
         `${ServerUrl}/users/get-users?token=${token}`
       );
-      setUsers(response.data.users);
+      const sortedUsers = response.data.users.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setUsers(sortedUsers);
     } catch (error) {
       console.error(
         "Error fetching users:",
@@ -144,11 +147,24 @@ const AdminPanel = ({ navigation }) => {
               <Image source={{ uri: user.avatar.url }} style={styles.avatar} />
               <View style={styles.userInfo}>
                 {AdminUser._id === user._id && (
-                  <Text style={{ display: "inline", color: "red" }}>Admin</Text>
+                  <Text style={styles.youLabel}>You</Text>
                 )}
+                {user.role === 1 && user._id !== AdminUser._id && (
+                  <Text style={styles.adminLabel}>Admin</Text>
+                )}
+
                 <Text style={styles.userName}>{user.name}</Text>
                 <Text style={styles.userEmail}>{user.emailAddress}</Text>
                 <Text style={styles.userContact}>{user.contactNumber}</Text>
+                <Text style={styles.createdAt}>
+                  {new Date(user.createdAt).toLocaleString([], {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -172,21 +188,30 @@ const AdminPanel = ({ navigation }) => {
                 source={{ uri: selectedUser.avatar.url }}
                 style={styles.modalAvatar}
               />
-              <Text style={styles.modalText}>Name: <Text style={styles.boldText}>{selectedUser.name}</Text></Text>
               <Text style={styles.modalText}>
-                Email: <Text style={styles.boldText}>{selectedUser.emailAddress}</Text>
+                Name: <Text style={styles.boldText}>{selectedUser.name}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Contact: <Text style={styles.boldText}>{selectedUser.contactNumber}</Text>
+                Email:{" "}
+                <Text style={styles.boldText}>{selectedUser.emailAddress}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Address: <Text style={styles.boldText}>{selectedUser.address}</Text>
+                Contact:{" "}
+                <Text style={styles.boldText}>
+                  {selectedUser.contactNumber}
+                </Text>
               </Text>
               <Text style={styles.modalText}>
-                Status: <Text style={styles.boldText}>{selectedUser.status}</Text>
+                Address:{" "}
+                <Text style={styles.boldText}>{selectedUser.address}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Role: <Text style={styles.boldText}>
+                Status:{" "}
+                <Text style={styles.boldText}>{selectedUser.status}</Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Role:{" "}
+                <Text style={styles.boldText}>
                   {selectedUser.role === 1
                     ? "Admin"
                     : selectedUser.role === 2
@@ -195,27 +220,34 @@ const AdminPanel = ({ navigation }) => {
                 </Text>
               </Text>
               <Text style={styles.modalText}>
-                Created At: <Text style={styles.boldText}>{new Date(selectedUser.createdAt).toLocaleString()}</Text>
+                Created At:{" "}
+                <Text style={styles.boldText}>
+                  {new Date(selectedUser.createdAt).toLocaleString()}
+                </Text>
               </Text>
               <Text style={styles.modalText}>
-                Updated At: <Text style={styles.boldText}>{new Date(selectedUser.updatedAt).toLocaleString()}</Text>
+                Updated At:{" "}
+                <Text style={styles.boldText}>
+                  {new Date(selectedUser.updatedAt).toLocaleString()}
+                </Text>
               </Text>
-              {AdminUser._id !== selectedUser._id && (
-                <>
-                  <TouchableOpacity
-                    style={styles.changeRoleButton}
-                    onPress={showRoleOptions}
-                  >
-                    <Text style={styles.buttonText}>Change Role</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={deleteUser}
-                  >
-                    <Text style={styles.buttonText}>Delete User</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              {AdminUser._id !== selectedUser._id &&
+                selectedUser.role !== 1 && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.changeRoleButton}
+                      onPress={showRoleOptions}
+                    >
+                      <Text style={styles.buttonText}>Change Role</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={deleteUser}
+                    >
+                      <Text style={styles.buttonText}>Delete User</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                 <Text style={styles.buttonText}>Close</Text>
               </TouchableOpacity>
@@ -328,6 +360,20 @@ const styles = StyleSheet.create({
   userContact: {
     fontSize: 14,
     color: "#666",
+  },
+  createdAt: {
+    fontSize: 12,
+    color: "gray",
+  },
+  adminLabel: {
+    color: "blue",
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  youLabel: {
+    color: "red",
+    fontWeight: "bold",
+    marginBottom: 5,
   },
   modalContainer: {
     flex: 1,

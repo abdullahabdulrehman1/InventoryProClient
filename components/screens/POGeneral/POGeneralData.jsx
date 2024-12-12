@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions } from "@react-navigation/native";
 
 const POGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
@@ -79,7 +80,15 @@ const POGeneralData = ({ navigation }) => {
   };
 
   const handleEdit = (po) => {
-    navigation.navigate("POGeneralEdit",{po});
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: "POGeneral" },
+          { name: "POGeneralEdit", params: { po } },
+        ],
+      })
+    );
   };
 
   const closeModal = () => {
@@ -95,7 +104,7 @@ const POGeneralData = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate("POGeneral")}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.header}>PO General Data</Text>

@@ -31,7 +31,10 @@ const PendingUsers = ({ navigation }) => {
       const response = await axios.get(
         `${ServerUrl}/users/pending-users?token=${token}`
       );
-      setUsers(response.data.users);
+      const sortedUsers = response.data.users.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setUsers(sortedUsers);
     } catch (error) {
       console.error(
         "Error fetching users:",
@@ -124,6 +127,15 @@ const PendingUsers = ({ navigation }) => {
                   <Text style={styles.userName}>{user.name}</Text>
                   <Text style={styles.userEmail}>{user.emailAddress}</Text>
                   <Text style={styles.userContact}>{user.contactNumber}</Text>
+                  <Text style={styles.createdAt}>
+                    {new Date(user.createdAt).toLocaleString([], {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
                 </View>
               </TouchableOpacity>
             ))
@@ -148,25 +160,41 @@ const PendingUsers = ({ navigation }) => {
                 source={{ uri: selectedUser.avatar.url }}
                 style={styles.modalAvatar}
               />
-              <Text style={styles.modalText}>Name: {selectedUser.name}</Text>
               <Text style={styles.modalText}>
-                Email: {selectedUser.emailAddress}
+                Name: <Text style={styles.boldText}>{selectedUser.name}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Contact: {selectedUser.contactNumber}
+                Email:{" "}
+                <Text style={styles.boldText}>{selectedUser.emailAddress}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Address: {selectedUser.address}
+                Contact:{" "}
+                <Text style={styles.boldText}>
+                  {selectedUser.contactNumber}
+                </Text>
               </Text>
               <Text style={styles.modalText}>
-                Status: {selectedUser.status}
-              </Text>
-              <Text style={styles.modalText}>Role: {selectedUser.role}</Text>
-              <Text style={styles.modalText}>
-                Created At: {new Date(selectedUser.createdAt).toLocaleString()}
+                Address:{" "}
+                <Text style={styles.boldText}>{selectedUser.address}</Text>
               </Text>
               <Text style={styles.modalText}>
-                Updated At: {new Date(selectedUser.updatedAt).toLocaleString()}
+                Status:{" "}
+                <Text style={styles.boldText}>{selectedUser.status}</Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Role: <Text style={styles.boldText}>{selectedUser.role}</Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Created At:{" "}
+                <Text style={styles.boldText}>
+                  {new Date(selectedUser.createdAt).toLocaleString()}
+                </Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Updated At:{" "}
+                <Text style={styles.boldText}>
+                  {new Date(selectedUser.updatedAt).toLocaleString()}
+                </Text>
               </Text>
               <TouchableOpacity
                 style={styles.changeRoleButton}
@@ -287,6 +315,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
+  createdAt: {
+    fontSize: 12,
+    color: "gray",
+  },
   noUsersText: {
     textAlign: "center",
     fontSize: 18,
@@ -337,6 +369,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#333",
     textAlign: "center",
+  },
+  boldText: {
+    fontWeight: "bold",
   },
   changeRoleButton: {
     marginTop: 20,

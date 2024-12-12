@@ -1,22 +1,22 @@
-import { Picker } from "@react-native-picker/picker";
 import React, { useState } from "react";
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
   TextInput,
   Button,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ToastAndroid,
-  FlatList,
-  TouchableOpacity,
   Modal,
-  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 
-const GRNGeneral = () => {
+const GRNGeneral = ({ navigation }) => {
   const [grnNumber, setGrnNumber] = useState("");
   const [date, setDate] = useState("");
   const [supplierChallanNumber, setSupplierChallanNumber] = useState("");
@@ -25,138 +25,179 @@ const GRNGeneral = () => {
   const [inwardNumber, setInwardNumber] = useState("");
   const [inwardDate, setInwardDate] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [tableData, setTableData] = useState([
+  const [rows, setRows] = useState([
     {
       id: 1,
-      poNo: "PO001",
-      department: "Department 1",
-      category: "Category 1",
-      name: "Item 1",
-      unit: "pcs",
-      poQty: 100,
-      previousQty: 50,
-      balancePoQty: 50,
-      receivedQty: 50,
-      remarks: "Remark 1",
+      poNo: "",
+      department: "",
+      category: "",
+      name: "",
+      unit: "",
+      poQty: "",
+      previousQty: "",
+      balancePoQty: "",
+      receivedQty: "",
+      rowRemarks: "",
     },
-    {
-      id: 2,
-      poNo: "PO002",
-      department: "Department 2",
-      category: "Category 2",
-      name: "Item 2",
-      unit: "kg",
-      poQty: 200,
-      previousQty: 100,
-      balancePoQty: 100,
-      receivedQty: 100,
-      remarks: "Remark 2",
-    },
-    // Add more items as needed
   ]);
-  const [showModal, setShowModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 8;
+  const [loading, setLoading] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+
+  const addRow = () => {
+    setRows([
+      ...rows,
+      {
+        id: rows.length + 1,
+        poNo: "",
+        department: "",
+        category: "",
+        name: "",
+        unit: "",
+        poQty: "",
+        previousQty: "",
+        balancePoQty: "",
+        receivedQty: "",
+        rowRemarks: "",
+      },
+    ]);
+  };
+
+  const removeRow = (index) => {
+    const values = [...rows];
+    values.splice(index, 1);
+    setRows(values);
+  };
+
+  const handleInputChange = (index, name, value) => {
+    const values = [...rows];
+    values[index][name] = value;
+    setRows(values);
+  };
 
   const validateDate = (date) => {
     const regex = /^\d{2}-\d{2}-\d{4}$/;
     return regex.test(date);
   };
 
-  const handleSubmit = () => {
+  const validateForm = () => {
     if (!grnNumber) {
-      ToastAndroid.show("Please enter GRN #", ToastAndroid.SHORT);
-      return;
+      Alert.alert("Validation Error", "GRN Number is required.");
+      return false;
     }
     if (!validateDate(date)) {
-      ToastAndroid.show(
-        "Invalid date format. Use DD-MM-YYYY",
-        ToastAndroid.SHORT
-      );
-      return;
-    }
-    if (!supplierChallanNumber) {
-      ToastAndroid.show("Please enter Supplier Challan #", ToastAndroid.SHORT);
-      return;
+      Alert.alert("Validation Error", "Invalid date format. Use DD-MM-YYYY.");
+      return false;
     }
     if (!validateDate(supplierChallanDate)) {
-      ToastAndroid.show(
-        "Invalid Supplier Challan Date format. Use DD-MM-YYYY",
-        ToastAndroid.SHORT
+      Alert.alert(
+        "Validation Error",
+        "Invalid Supplier Challan date format. Use DD-MM-YYYY."
       );
-      return;
+      return false;
     }
     if (!supplier) {
-      ToastAndroid.show("Please enter Supplier", ToastAndroid.SHORT);
-      return;
-    }
-    if (!inwardNumber) {
-      ToastAndroid.show("Please enter Inward #", ToastAndroid.SHORT);
-      return;
+      Alert.alert("Validation Error", "Supplier is required.");
+      return false;
     }
     if (!validateDate(inwardDate)) {
-      ToastAndroid.show(
-        "Invalid Inward Date format. Use DD-MM-YYYY",
-        ToastAndroid.SHORT
+      Alert.alert(
+        "Validation Error",
+        "Invalid Inward date format. Use DD-MM-YYYY."
       );
-      return;
+      return false;
     }
     if (!remarks) {
-      ToastAndroid.show("Please enter Remarks", ToastAndroid.SHORT);
+      Alert.alert("Validation Error", "Remarks are required.");
+      return false;
+    }
+
+    for (let row of rows) {
+      if (!row.poNo) {
+        Alert.alert("Validation Error", "PO No is required.");
+        return false;
+      }
+      if (!row.department) {
+        Alert.alert("Validation Error", "Department is required.");
+        return false;
+      }
+      if (!row.category) {
+        Alert.alert("Validation Error", "Category is required.");
+        return false;
+      }
+      if (!row.name) {
+        Alert.alert("Validation Error", "Item Name is required.");
+        return false;
+      }
+      if (!row.unit) {
+        Alert.alert("Validation Error", "Unit is required.");
+        return false;
+      }
+      if (!row.poQty || isNaN(row.poQty)) {
+        Alert.alert(
+          "Validation Error",
+          "PO Qty is required and must be a number."
+        );
+        return false;
+      }
+      if (!row.previousQty || isNaN(row.previousQty)) {
+        Alert.alert(
+          "Validation Error",
+          "Previous Qty is required and must be a number."
+        );
+        return false;
+      }
+      if (!row.balancePoQty || isNaN(row.balancePoQty)) {
+        Alert.alert(
+          "Validation Error",
+          "Balance PO Qty is required and must be a number."
+        );
+        return false;
+      }
+      if (!row.receivedQty || isNaN(row.receivedQty)) {
+        Alert.alert(
+          "Validation Error",
+          "Received Qty is required and must be a number."
+        );
+        return false;
+      }
+      if (row.rowRemarks && row.rowRemarks.length > 150) {
+        Alert.alert(
+          "Validation Error",
+          "Remarks cannot exceed 150 characters."
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    // Submit the form
-    ToastAndroid.show("Form submitted successfully", ToastAndroid.SHORT);
+    setLoading(true);
+
+    try {
+      // Add your submit logic here
+      setSuccessModalVisible(true);
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderTableHeader = () => (
-    <View style={styles.tableRow}>
-      <Text style={styles.tableHeader}>Action</Text>
-      <Text style={styles.tableHeader}>S.No</Text>
-      <Text style={styles.tableHeader}>PO No</Text>
-      <Text style={styles.tableHeader}>Department</Text>
-      <Text style={styles.tableHeader}>Level 3 Item Category</Text>
-      <Text style={styles.tableHeader}>Item Name</Text>
-      <Text style={styles.tableHeader}>Unit</Text>
-      <Text style={styles.tableHeader}>PO Qty</Text>
-      <Text style={styles.tableHeader}>Previous Qty</Text>
-      <Text style={styles.tableHeader}>Balance PO Qty</Text>
-      <Text style={styles.tableHeader}>Received Qty</Text>
-      <Text style={styles.tableHeader}>Remarks</Text>
-    </View>
-  );
-
-  const renderTableRow = ({ item, index }) => (
-    <View style={styles.tableRow} key={item.id}>
-      <Text style={styles.tableCell}>Edit/Delete</Text>
-      <Text style={styles.tableCell}>{index + 1}</Text>
-      <Text style={styles.tableCell}>{item.poNo}</Text>
-      <Text style={styles.tableCell}>{item.department}</Text>
-      <Text style={styles.tableCell}>{item.category}</Text>
-      <Text style={styles.tableCell}>{item.name}</Text>
-      <Text style={styles.tableCell}>{item.unit}</Text>
-      <Text style={styles.tableCell}>{item.poQty}</Text>
-      <Text style={styles.tableCell}>{item.previousQty}</Text>
-      <Text style={styles.tableCell}>{item.balancePoQty}</Text>
-      <Text style={styles.tableCell}>{item.receivedQty}</Text>
-      <Text style={styles.tableCell}>{item.remarks}</Text>
-    </View>
-  );
-
-  const formData = [
-    
-    {
-      key: "grnNumber",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="document-text-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="document-text-outline" size={20} color="black" />
             <Text style={styles.label}>GRN #</Text>
           </View>
           <TextInput
@@ -164,22 +205,11 @@ const GRNGeneral = () => {
             value={grnNumber}
             onChangeText={setGrnNumber}
             placeholder="Enter GRN #"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "date",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="calendar-outline" size={20} color="black" />
             <Text style={styles.label}>Date</Text>
           </View>
           <TextInput
@@ -187,22 +217,11 @@ const GRNGeneral = () => {
             value={date}
             onChangeText={setDate}
             placeholder="Enter Date (DD-MM-YYYY)"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "supplierChallanNumber",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="document-text-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="document-text-outline" size={20} color="black" />
             <Text style={styles.label}>Supplier Challan #</Text>
           </View>
           <TextInput
@@ -210,45 +229,23 @@ const GRNGeneral = () => {
             value={supplierChallanNumber}
             onChangeText={setSupplierChallanNumber}
             placeholder="Enter Supplier Challan #"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "supplierChallanDate",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
-            <Text style={styles.label}>Supplier Challan Date</Text>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="calendar-outline" size={20} color="black" />
+            <Text style={styles.label}>Date</Text>
           </View>
           <TextInput
             style={styles.input}
             value={supplierChallanDate}
             onChangeText={setSupplierChallanDate}
-            placeholder="(DD-MM-YYYY)"
-            placeholderTextColor="#888"
+            placeholder="Enter Date (DD-MM-YYYY)"
           />
         </View>
-      ),
-    },
-    { 
-      key: "supplier",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="business-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="business-outline" size={20} color="black" />
             <Text style={styles.label}>Supplier</Text>
           </View>
           <TextInput
@@ -256,22 +253,11 @@ const GRNGeneral = () => {
             value={supplier}
             onChangeText={setSupplier}
             placeholder="Enter Supplier"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "inwardNumber",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="document-text-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="document-text-outline" size={20} color="black" />
             <Text style={styles.label}>Inward #</Text>
           </View>
           <TextInput
@@ -279,45 +265,23 @@ const GRNGeneral = () => {
             value={inwardNumber}
             onChangeText={setInwardNumber}
             placeholder="Enter Inward #"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "inwardDate",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
-            <Text style={styles.label}>Inward Date</Text>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="calendar-outline" size={20} color="black" />
+            <Text style={styles.label}>Date</Text>
           </View>
           <TextInput
             style={styles.input}
             value={inwardDate}
             onChangeText={setInwardDate}
-            placeholder="Enter Inward Date (DD-MM-YYYY)"
-            placeholderTextColor="#888"
+            placeholder="Enter Date (DD-MM-YYYY)"
           />
         </View>
-      ),
-    },
-    {
-      key: "remarks",
-      render: () => (
-        <View style={styles.fieldContainer}>
-          <View style={styles.iconLabelContainer}>
-            <Ionicons
-              name="chatbox-ellipses-outline"
-              size={24}
-              color="#333"
-              style={styles.icon}
-            />
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="chatbox-ellipses-outline" size={20} color="black" />
             <Text style={styles.label}>Remarks</Text>
           </View>
           <TextInput
@@ -325,86 +289,146 @@ const GRNGeneral = () => {
             value={remarks}
             onChangeText={setRemarks}
             placeholder="Enter Remarks"
-            placeholderTextColor="#888"
           />
         </View>
-      ),
-    },
-    {
-      key: "submit",
-      render: () => (
-        <View style={{ borderRadius: 20, overflow: "hidden" }}>
-          <Button title="Submit" onPress={handleSubmit} color="#1b1f26" />
-        </View>
-      ),
-    },
-    {
-      key: "showTableButton",
-      render: () => (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setShowModal(true)}
-        >
-          <Text style={styles.buttonText}>Show GRN Data</Text>
-        </TouchableOpacity>
-      ),
-    },
-  ];
-
-  const totalPages = Math.ceil(tableData.length / itemsPerPage);
-  const paginatedData = tableData.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // Adjust this value based on your header height
-    >
-      <ScrollView>
-        {formData.map((item) => (
-          <View key={item.key}>{item.render()}</View>
+        {rows.map((row, index) => (
+          <View key={index} style={styles.row}>
+            <Text style={styles.rowLabel}>Row {index + 1}</Text>
+            <Text style={styles.fieldLabel}>PO No</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="PO No"
+              value={row.poNo}
+              onChangeText={(text) => handleInputChange(index, "poNo", text)}
+            />
+            <Text style={styles.fieldLabel}>Department</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Department"
+              value={row.department}
+              onChangeText={(text) =>
+                handleInputChange(index, "department", text)
+              }
+            />
+            <Text style={styles.fieldLabel}>Level 3 Item Category</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Level 3 Item Category"
+              value={row.category}
+              onChangeText={(text) =>
+                handleInputChange(index, "category", text)
+              }
+            />
+            <Text style={styles.fieldLabel}>Item Name</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Item Name"
+              value={row.name}
+              onChangeText={(text) => handleInputChange(index, "name", text)}
+            />
+            <Text style={styles.fieldLabel}>Unit</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Unit"
+              value={row.unit}
+              onChangeText={(text) => handleInputChange(index, "unit", text)}
+            />
+            <Text style={styles.fieldLabel}>PO Qty</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="PO Qty"
+              value={String(row.poQty)}
+              onChangeText={(text) => handleInputChange(index, "poQty", text)}
+              keyboardType="numeric"
+            />
+            <Text style={styles.fieldLabel}>Previous Qty</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Previous Qty"
+              value={String(row.previousQty)}
+              onChangeText={(text) =>
+                handleInputChange(index, "previousQty", text)
+              }
+              keyboardType="numeric"
+            />
+            <Text style={styles.fieldLabel}>Balance PO Qty</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Balance PO Qty"
+              value={String(row.balancePoQty)}
+              onChangeText={(text) =>
+                handleInputChange(index, "balancePoQty", text)
+              }
+              keyboardType="numeric"
+            />
+            <Text style={styles.fieldLabel}>Received Qty</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Received Qty"
+              value={String(row.receivedQty)}
+              onChangeText={(text) =>
+                handleInputChange(index, "receivedQty", text)
+              }
+              keyboardType="numeric"
+            />
+            <Text style={styles.fieldLabel}>Remarks</Text>
+            <TextInput
+              style={styles.rowInput}
+              placeholder="Remarks"
+              value={row.rowRemarks}
+              onChangeText={(text) =>
+                handleInputChange(index, "rowRemarks", text)
+              }
+            />
+            {index > 0 && (
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removeRow(index)}
+              >
+                <Ionicons name="remove-circle" size={24} color="red" />
+              </TouchableOpacity>
+            )}
+          </View>
         ))}
+        <View style={styles.buttonContainer}>
+          <Button title="Add Row" onPress={addRow} color="#1b1f26" />
+        </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Submit</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
       <Modal
-        visible={showModal}
-        transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowModal(false)}
+        transparent={true}
+        visible={successModalVisible}
+        onRequestClose={() => setSuccessModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Success</Text>
+            <Text style={styles.modalText}>
+              Goods Received Note created successfully.
+            </Text>
             <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowModal(false)}
+              style={styles.button}
+              onPress={() => {
+                setSuccessModalVisible(false);
+                navigation.navigate("GRNGeneralData");
+              }}
             >
-              <Ionicons name="close" size={24} color="black" />
+              <Text style={styles.buttonText}>OK</Text>
             </TouchableOpacity>
-            <ScrollView horizontal={true}>
-              <ScrollView>
-                <Text style={styles.modalHeader}>GRN Data</Text>
-                {renderTableHeader()}
-                {paginatedData.map((item, index) =>
-                  renderTableRow({ item, index })
-                )}
-                <View style={styles.paginationContainer}>
-                  {Array.from({ length: totalPages }).map((_, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.pageButton,
-                        currentPage === index && styles.activePageButton,
-                      ]}
-                      onPress={() => setCurrentPage(index)}
-                    >
-                      <Text style={styles.pageButtonText}>{index + 1}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -412,66 +436,74 @@ const GRNGeneral = () => {
   );
 };
 
-export default GRNGeneral;
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
     padding: 20,
+    flexGrow: 1,
   },
   header: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
     marginBottom: 20,
     textAlign: "center",
   },
-  fieldContainer: {
-    marginBottom: 10,
+  formGroup: {
+    marginBottom: 15,
   },
-  iconLabelContainer: {
+  labelContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 5,
-  },
-  icon: {
-    marginRight: 10,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    marginLeft: 5,
   },
   input: {
-    height: 40,
-    borderColor: "#ccc",
     borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
     borderRadius: 20,
-    paddingHorizontal: 10,
-    backgroundColor: "#fff",
-    color: "#333",
+    marginTop: 5,
   },
-  pickerContainer: {
+  row: {
+    marginBottom: 15,
+    position: "relative",
+  },
+  rowLabel: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  rowInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 20,
+    marginBottom: 5,
+  },
+  removeButton: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+  },
+  buttonContainer: {
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#fff",
-  },
-  picker: {
-    height: 50,
+    marginTop: 20,
     width: "100%",
-    color: "#333",
   },
   button: {
     backgroundColor: "#1b1f26",
-    padding: 10,
+    padding: 15,
+    width: "100%",
     borderRadius: 20,
     alignItems: "center",
-    marginVertical: 10,
   },
   buttonText: {
     color: "#fff",
+    fontSize: 16,
+  },
+  fieldLabel: {
     fontWeight: "bold",
+    marginBottom: 5,
   },
   modalContainer: {
     flex: 1,
@@ -480,57 +512,21 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "90%",
-    height: "80%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 1,
+    width: "80%",
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 20,
+    alignItems: "center",
   },
   modalHeader: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
-    textAlign: "center",
   },
-  tableContainer: {
-    marginTop: 20,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingVertical: 10,
-  },
-  tableHeader: {
-    flex: 1,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  tableCell: {
-    flex: 1,
-    color: "#333",
-  },
-  paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 10,
-  },
-  pageButton: {
-    marginHorizontal: 5,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#ccc",
-  },
-  activePageButton: {
-    backgroundColor: "#1b1f26",
-  },
-  pageButtonText: {
-    color: "#fff",
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
   },
 });
+
+export default GRNGeneral;
