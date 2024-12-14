@@ -4,7 +4,6 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity, View } from "react-native";
 import CustomDrawerContent from "./CustomDrawerContent";
-import GRNGeneral from "../screens/GRNGeneral";
 import IssueGeneral from "../screens/IssueGeneral";
 import IssueReturnGeneral from "../screens/IssueReturnGeneral";
 import GRNReturnGeneral from "../screens/GRNReturnGeneral";
@@ -14,6 +13,8 @@ import { useSelector } from "react-redux";
 import AdminPanel from "../screens/Admin/AdminPanel";
 import { ROLES } from "../auth/role";
 import AdminPanelNavigator from "./AdminNavigator";
+import GRNGeneralNavigator from "./GRNGeneralNavigator";
+import GRNGeneral from "./../screens/GRNGeneral/GRNGeneral";
 
 const Drawer = createDrawerNavigator();
 const DrawerNavigator = () => {
@@ -129,7 +130,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="GRN General"
-              component={GRNGeneral}
+              component={GRNGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons name="receipt-outline" color={color} size={size} />
@@ -168,7 +169,7 @@ const DrawerNavigator = () => {
                     color={color}
                     size={size}
                   />
-                ),  
+                ),
               }}
             />
           </>
