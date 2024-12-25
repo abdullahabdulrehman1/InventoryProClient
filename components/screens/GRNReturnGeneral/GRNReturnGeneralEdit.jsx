@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,112 +12,139 @@ import {
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions } from "@react-navigation/native";
 
-const GRNGeneral = ({ navigation }) => {
-  const [grnNumber, setGrnNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [supplierChallanNumber, setSupplierChallanNumber] = useState("");
-  const [supplierChallanDate, setSupplierChallanDate] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [inwardNumber, setInwardNumber] = useState("");
-  const [inwardDate, setInwardDate] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [rows, setRows] = useState([
-    {
-      poNo: "",
-      department: "",
-      category: "",
-      name: "",
-      unit: "",
-      poQty: "",
-      previousQty: "",
-      balancePoQty: "",
-      receivedQty: "",
-      rowRemarks: "",
-    },
-  ]);
+const GRNReturnGeneralEdit = ({ navigation, route }) => {
+  const { grnReturn } = route.params; // Assuming GRN Return data is passed via route params
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  const [rows, setRows] = useState(grnReturn.rows || []);
+  const [grnrNumber, setGrnrNumber] = useState(grnReturn.grnrNumber || "");
+  const [grnrDate, setGrnrDate] = useState(
+    formatDate(grnReturn.grnrDate) || ""
+  );
+  const [grnNumber, setGrnNumber] = useState(grnReturn.grnNumber || "");
+  const [grnDate, setGrnDate] = useState(formatDate(grnReturn.grnDate) || "");
+  const [remarks, setRemarks] = useState(grnReturn.remarks || "");
   const [loading, setLoading] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorMessages, setErrorMessages] = useState([]);
+
+  useEffect(() => {
+    console.log("Initial rows state:", rows);
+  }, []);
 
   const addRow = () => {
     setRows([
       ...rows,
       {
-        poNo: "",
-        department: "",
+        action: "",
+        serialNo: "",
         category: "",
         name: "",
         unit: "",
-        poQty: "",
-        previousQty: "",
-        balancePoQty: "",
-        receivedQty: "",
+        grnQty: "",
+        previousReturnQty: "",
+        balanceGrnQty: "",
+        returnQty: "",
         rowRemarks: "",
       },
     ]);
   };
 
   const removeRow = (index) => {
-    if (rows.length > 1) {
-      const values = [...rows];
-      values.splice(index, 1);
-      setRows(values);
-    } else {
-      Alert.alert("Error", "At least one row is required.");
-    }
-  };
-
-  const handleInputChange = (index, name, value) => {
     const values = [...rows];
-    values[index][name] = value;
+    values.splice(index, 1);
     setRows(values);
   };
 
+  const handleInputChange = (index, name, value) => {
+    console.log(`Updating row ${index}, field ${name} with value ${value}`);
+    const updatedRows = rows.map((row, i) =>
+      i === index ? { ...row, [name]: value } : row
+    );
+    setRows(updatedRows);
+  };
+
+  const validateDate = (date) => {
+    const regex = /^\d{2}-\d{2}-\d{4}$/;
+    return regex.test(date);
+  };
+
   const handleSubmit = async () => {
+    if (!validateDate(grnrDate) || !validateDate(grnDate)) {
+      Alert.alert("Error", "Please enter dates in the format dd-mm-yyyy.");
+      return;
+    }
+
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
     const user = await AsyncStorage.getItem("user");
     const userId = JSON.parse(user)._id;
-
+    const items = rows;
+    const [grnrDay, grnrMonth, grnrYear] = grnrDate.split("-");
+    const isoGrnrDate = new Date(
+      `${grnrYear}-${grnrMonth}-${grnrDay}`
+    ).toISOString();
+    const [grnDay, grnMonth, grnYear] = grnDate.split("-");
+    const isoGrnDate = new Date(
+      `${grnYear}-${grnMonth}-${grnDay}`
+    ).toISOString();
     try {
-      const response = await axios.post(`${ServerUrl}/grnGeneral/createGRN`, {
-        token,
-        userId,
-        grnNumber,
-        date,
-        supplierChallanNumber,
-        supplierChallanDate,
-        supplier,
-        inwardNumber,
-        inwardDate,
-        remarks,
-        rows,
-      });
-      if (response.status === 201) {
+      const response = await axios.put(
+        `${ServerUrl}/grnReturnGeneral/edit-grn-return-general`,
+        {
+          token,
+          userId,
+          id: grnReturn._id,
+          grnrNumber,
+          grnrDate: isoGrnrDate,
+          grnNumber,
+          grnDate: isoGrnDate,
+          remarks,
+          rows: items,
+        }
+      );
+      console.log(response.data.message);
+      if (response.status === 200) {
         setSuccessModalVisible(true);
       } else {
-        setErrorMessages(response.data.errors.map((error) => error.msg));
-        setErrorModalVisible(true);
+        Alert.alert("Error", response.data.message || "Something went wrong.");
       }
     } catch (error) {
       console.error("Error response:", error.response);
       if (error.response) {
-        setErrorMessages(error.response.data.errors.map((error) => error.msg));
+        Alert.alert(
+          "Error",
+          error.response.data.message || "Something went wrong."
+        );
       } else if (error.request) {
-        setErrorMessages(["No response received from server."]);
+        Alert.alert("Error", "No response received from server.");
       } else {
-        setErrorMessages([error.message]);
+        Alert.alert("Error", error.message || "Something went wrong.");
       }
-      setErrorModalVisible(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setSuccessModalVisible(false);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "GRNReturnGeneralData" }],
+      })
+    );
   };
 
   return (
@@ -126,6 +153,39 @@ const GRNGeneral = ({ navigation }) => {
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.headerContainer}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("GRNReturnGeneralData")}
+          >
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.header}>Edit GRN Return</Text>
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="document-text-outline" size={20} color="black" />
+            <Text style={styles.label}>GRNR Number</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={grnrNumber}
+            onChangeText={setGrnrNumber}
+            required
+          />
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="calendar-outline" size={20} color="black" />
+            <Text style={styles.label}>GRNR Date</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={grnrDate}
+            onChangeText={setGrnrDate}
+            placeholder="dd-mm-yyyy"
+            required
+          />
+        </View>
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="document-text-outline" size={20} color="black" />
@@ -141,74 +201,12 @@ const GRNGeneral = ({ navigation }) => {
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Date</Text>
+            <Text style={styles.label}>GRN Date</Text>
           </View>
           <TextInput
             style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanNumber}
-            onChangeText={setSupplierChallanNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanDate}
-            onChangeText={setSupplierChallanDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="business-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplier}
-            onChangeText={setSupplier}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={inwardNumber}
-            onChangeText={setInwardNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={inwardDate}
-            onChangeText={setInwardDate}
+            value={grnDate}
+            onChangeText={setGrnDate}
             placeholder="dd-mm-yyyy"
             required
           />
@@ -228,22 +226,24 @@ const GRNGeneral = ({ navigation }) => {
           <View key={index} style={styles.row}>
             <Text style={styles.rowLabel}>Row {index + 1}</Text>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Number</Text>
+              <Text style={styles.rowLabel}>Action</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="PO Number"
-                value={row.poNo}
-                onChangeText={(text) => handleInputChange(index, "poNo", text)}
+                placeholder="Action"
+                value={row.action}
+                onChangeText={(text) =>
+                  handleInputChange(index, "action", text)
+                }
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Department</Text>
+              <Text style={styles.rowLabel}>Serial No</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Department"
-                value={row.department}
+                placeholder="Serial No"
+                value={row.serialNo}
                 onChangeText={(text) =>
-                  handleInputChange(index, "department", text)
+                  handleInputChange(index, "serialNo", text)
                 }
               />
             </View>
@@ -277,47 +277,49 @@ const GRNGeneral = ({ navigation }) => {
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Quantity</Text>
+              <Text style={styles.rowLabel}>GRN Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="PO Quantity"
-                value={row.poQty}
-                onChangeText={(text) => handleInputChange(index, "poQty", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Previous Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Previous Quantity"
-                value={row.previousQty}
+                placeholder="GRN Qty"
+                value={row.grnQty.toString()}
                 onChangeText={(text) =>
-                  handleInputChange(index, "previousQty", text)
+                  handleInputChange(index, "grnQty", text)
                 }
                 keyboardType="numeric"
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Balance PO Quantity</Text>
+              <Text style={styles.rowLabel}>Previous Return Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Balance PO Quantity"
-                value={row.balancePoQty}
+                placeholder="Previous Return Qty"
+                value={row.previousReturnQty.toString()}
                 onChangeText={(text) =>
-                  handleInputChange(index, "balancePoQty", text)
+                  handleInputChange(index, "previousReturnQty", text)
                 }
                 keyboardType="numeric"
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Received Quantity</Text>
+              <Text style={styles.rowLabel}>Balance GRN Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Received Quantity"
-                value={row.receivedQty}
+                placeholder="Balance GRN Qty"
+                value={row.balanceGrnQty.toString()}
                 onChangeText={(text) =>
-                  handleInputChange(index, "receivedQty", text)
+                  handleInputChange(index, "balanceGrnQty", text)
+                }
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.rowLabel}>Return Qty</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Return Qty"
+                value={row.returnQty.toString()}
+                onChangeText={(text) =>
+                  handleInputChange(index, "returnQty", text)
                 }
                 keyboardType="numeric"
               />
@@ -359,56 +361,23 @@ const GRNGeneral = ({ navigation }) => {
             )}
           </TouchableOpacity>
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("GRNGeneralData")}
-          >
-            <Text style={styles.buttonText}>Show GRN General Data</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       <Modal
         animationType="slide"
         transparent={true}
         visible={successModalVisible}
-        onRequestClose={() => setSuccessModalVisible(false)}
+        onRequestClose={handleSuccessModalClose}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Success</Text>
-            <Text style={styles.modalText}>GRN created successfully.</Text>
+            <Text style={styles.modalText}>
+              GRN Return updated successfully.
+            </Text>
             <TouchableOpacity
               style={styles.button}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.navigate("GRNGeneralData");
-              }}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={errorModalVisible}
-        onRequestClose={() => setErrorModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Error</Text>
-            {errorMessages.map((message, index) => (
-              <Text key={index} style={styles.modalText}>
-                {message}
-              </Text>
-            ))}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setErrorModalVisible(false)}
+              onPress={handleSuccessModalClose}
             >
               <Text style={styles.buttonText}>OK</Text>
             </TouchableOpacity>
@@ -422,15 +391,26 @@ const GRNGeneral = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    paddingTop: 10, // Add padding to the top
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 100, // Add padding to the bottom
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
   },
   buttonContainer: {
     borderRadius: 20,
     overflow: "hidden",
     marginTop: 20,
-    width: "100%",
+    width: "100%", // Ensure all buttons have the same width
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
   formGroup: {
     marginBottom: 15,
@@ -472,7 +452,6 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#1b1f26",
     padding: 15,
-    width: "100%",
     borderRadius: 20,
     alignItems: "center",
   },
@@ -489,7 +468,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "80%",
     backgroundColor: "white",
-    padding: 10,
+    padding: 20,
     borderRadius: 20,
     alignItems: "center",
   },
@@ -504,4 +483,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GRNGeneral;
+export default GRNReturnGeneralEdit;

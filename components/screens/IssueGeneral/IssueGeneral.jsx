@@ -13,51 +13,52 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const GRNGeneral = ({ navigation }) => {
+const IssueGeneral = ({ navigation }) => {
   const [grnNumber, setGrnNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [supplierChallanNumber, setSupplierChallanNumber] = useState("");
-  const [supplierChallanDate, setSupplierChallanDate] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [inwardNumber, setInwardNumber] = useState("");
-  const [inwardDate, setInwardDate] = useState("");
+  const [issueDate, setIssueDate] = useState("");
+  const [store, setStore] = useState("");
+  const [requisitionType, setRequisitionType] = useState("");
+  const [issueToUnit, setIssueToUnit] = useState("");
+  const [demandNo, setDemandNo] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
+  const [issueToDepartment, setIssueToDepartment] = useState("");
+  const [vehicleNo, setVehicleNo] = useState("");
+  const [driver, setDriver] = useState("");
   const [remarks, setRemarks] = useState("");
   const [rows, setRows] = useState([
     {
-      poNo: "",
-      department: "",
-      category: "",
-      name: "",
-      unit: "",
-      poQty: "",
-      previousQty: "",
-      balancePoQty: "",
-      receivedQty: "",
+      action: "",
+      serialNo: "",
+      level3ItemCategory: "",
+      itemName: "",
+      uom: "",
+      grnQty: "",
+      previousIssueQty: "",
+      balanceQty: "",
+      issueQty: "",
       rowRemarks: "",
     },
   ]);
   const [loading, setLoading] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorMessages, setErrorMessages] = useState([]);
 
   const addRow = () => {
     setRows([
       ...rows,
       {
-        poNo: "",
-        department: "",
-        category: "",
-        name: "",
-        unit: "",
-        poQty: "",
-        previousQty: "",
-        balancePoQty: "",
-        receivedQty: "",
+        action: "",
+        serialNo: "",
+        level3ItemCategory: "",
+        itemName: "",
+        uom: "",
+        grnQty: "",
+        previousIssueQty: "",
+        balanceQty: "",
+        issueQty: "",
         rowRemarks: "",
       },
     ]);
@@ -79,42 +80,60 @@ const GRNGeneral = ({ navigation }) => {
     setRows(values);
   };
 
+  const validateDate = (date) => {
+    const regex = /^\d{2}-\d{2}-\d{4}$/;
+    return regex.test(date);
+  };
+
   const handleSubmit = async () => {
+    if (!validateDate(issueDate)) {
+      Alert.alert("Error", "Please enter dates in the format dd-mm-yyyy.");
+      return;
+    }
+
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
     const user = await AsyncStorage.getItem("user");
     const userId = JSON.parse(user)._id;
+    const items = rows;
+    const [issueDay, issueMonth, issueYear] = issueDate.split("-");
+    const isoIssueDate = new Date(`${issueYear}-${issueMonth}-${issueDay}`).toISOString();
 
     try {
-      const response = await axios.post(`${ServerUrl}/grnGeneral/createGRN`, {
+      const response = await axios.post(`${ServerUrl}/issueGeneral/create-issue-general`, {
         token,
         userId,
         grnNumber,
-        date,
-        supplierChallanNumber,
-        supplierChallanDate,
-        supplier,
-        inwardNumber,
-        inwardDate,
+        issueDate: isoIssueDate,
+        store,
+        requisitionType,
+        issueToUnit,
+        demandNo,
+        vehicleType,
+        issueToDepartment,
+        vehicleNo,
+        driver,
         remarks,
-        rows,
+        rows: items,
       });
+      console.log(response.data);
       if (response.status === 201) {
         setSuccessModalVisible(true);
       } else {
-        setErrorMessages(response.data.errors.map((error) => error.msg));
-        setErrorModalVisible(true);
+        Alert.alert("Error", response.data.message || "Something went wrong.");
       }
     } catch (error) {
       console.error("Error response:", error.response);
       if (error.response) {
-        setErrorMessages(error.response.data.errors.map((error) => error.msg));
+        Alert.alert(
+          "Error",
+          error.response.data.message || "Something went wrong."
+        );
       } else if (error.request) {
-        setErrorMessages(["No response received from server."]);
+        Alert.alert("Error", "No response received from server.");
       } else {
-        setErrorMessages([error.message]);
+        Alert.alert("Error", error.message || "Something went wrong.");
       }
-      setErrorModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -122,14 +141,11 @@ const GRNGeneral = ({ navigation }) => {
 
   return (
     <View>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>GRN Number</Text>
+            <Text style={styles.label}>GRN #</Text>
           </View>
           <TextInput
             style={styles.input}
@@ -141,37 +157,12 @@ const GRNGeneral = ({ navigation }) => {
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Date</Text>
+            <Text style={styles.label}>Issue Date</Text>
           </View>
           <TextInput
             style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanNumber}
-            onChangeText={setSupplierChallanNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanDate}
-            onChangeText={setSupplierChallanDate}
+            value={issueDate}
+            onChangeText={setIssueDate}
             placeholder="dd-mm-yyyy"
             required
           />
@@ -179,37 +170,100 @@ const GRNGeneral = ({ navigation }) => {
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="business-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier</Text>
+            <Text style={styles.label}>Store</Text>
           </View>
           <TextInput
             style={styles.input}
-            value={supplier}
-            onChangeText={setSupplier}
+            value={store}
+            onChangeText={setStore}
+            required
+          />
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="list-outline" size={20} color="black" />
+            <Text style={styles.label}>Requisition Type</Text>
+          </View>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={requisitionType}
+              style={styles.picker}
+              onValueChange={(itemValue) => setRequisitionType(itemValue)}
+            >
+              <Picker.Item label="Without Requisition" value="Without Requisition" />
+              <Picker.Item label="On Requisition" value="On Requisition" />
+            </Picker>
+          </View>
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="business-outline" size={20} color="black" />
+            <Text style={styles.label}>Issue to Unit</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={issueToUnit}
+            onChangeText={setIssueToUnit}
             required
           />
         </View>
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
             <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Number</Text>
+            <Text style={styles.label}>Demand No</Text>
           </View>
           <TextInput
             style={styles.input}
-            value={inwardNumber}
-            onChangeText={setInwardNumber}
+            value={demandNo}
+            onChangeText={setDemandNo}
             required
           />
         </View>
         <View style={styles.formGroup}>
           <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Date</Text>
+            <Ionicons name="car-outline" size={20} color="black" />
+            <Text style={styles.label}>Vehicle Type</Text>
           </View>
           <TextInput
             style={styles.input}
-            value={inwardDate}
-            onChangeText={setInwardDate}
-            placeholder="dd-mm-yyyy"
+            value={vehicleType}
+            onChangeText={setVehicleType}
+            required
+          />
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="business-outline" size={20} color="black" />
+            <Text style={styles.label}>Issue to Department</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={issueToDepartment}
+            onChangeText={setIssueToDepartment}
+            required
+          />
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="car-outline" size={20} color="black" />
+            <Text style={styles.label}>Vehicle No</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={vehicleNo}
+            onChangeText={setVehicleNo}
+            required
+          />
+        </View>
+        <View style={styles.formGroup}>
+          <View style={styles.labelContainer}>
+            <Ionicons name="person-outline" size={20} color="black" />
+            <Text style={styles.label}>Driver</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={driver}
+            onChangeText={setDriver}
             required
           />
         </View>
@@ -228,34 +282,30 @@ const GRNGeneral = ({ navigation }) => {
           <View key={index} style={styles.row}>
             <Text style={styles.rowLabel}>Row {index + 1}</Text>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Number</Text>
+              <Text style={styles.rowLabel}>Action</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="PO Number"
-                value={row.poNo}
-                onChangeText={(text) => handleInputChange(index, "poNo", text)}
+                placeholder="Action"
+                value={row.action}
+                onChangeText={(text) => handleInputChange(index, "action", text)}
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Department</Text>
+              <Text style={styles.rowLabel}>S.No</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Department"
-                value={row.department}
-                onChangeText={(text) =>
-                  handleInputChange(index, "department", text)
-                }
+                placeholder="S.No"
+                value={row.serialNo}
+                onChangeText={(text) => handleInputChange(index, "serialNo", text)}
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Category</Text>
+              <Text style={styles.rowLabel}>Level 3 Item Category</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Category"
-                value={row.category}
-                onChangeText={(text) =>
-                  handleInputChange(index, "category", text)
-                }
+                placeholder="Level 3 Item Category"
+                value={row.level3ItemCategory}
+                onChangeText={(text) => handleInputChange(index, "level3ItemCategory", text)}
               />
             </View>
             <View style={styles.formGroup}>
@@ -263,62 +313,56 @@ const GRNGeneral = ({ navigation }) => {
               <TextInput
                 style={styles.rowInput}
                 placeholder="Item Name"
-                value={row.name}
-                onChangeText={(text) => handleInputChange(index, "name", text)}
+                value={row.itemName}
+                onChangeText={(text) => handleInputChange(index, "itemName", text)}
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Unit</Text>
+              <Text style={styles.rowLabel}>Uom</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Unit"
-                value={row.unit}
-                onChangeText={(text) => handleInputChange(index, "unit", text)}
+                placeholder="Uom"
+                value={row.uom}
+                onChangeText={(text) => handleInputChange(index, "uom", text)}
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Quantity</Text>
+              <Text style={styles.rowLabel}>GRN Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="PO Quantity"
-                value={row.poQty}
-                onChangeText={(text) => handleInputChange(index, "poQty", text)}
+                placeholder="GRN Qty"
+                value={row.grnQty}
+                onChangeText={(text) => handleInputChange(index, "grnQty", text)}
                 keyboardType="numeric"
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Previous Quantity</Text>
+              <Text style={styles.rowLabel}>Previous Issue Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Previous Quantity"
-                value={row.previousQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "previousQty", text)
-                }
+                placeholder="Previous Issue Qty"
+                value={row.previousIssueQty}
+                onChangeText={(text) => handleInputChange(index, "previousIssueQty", text)}
                 keyboardType="numeric"
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Balance PO Quantity</Text>
+              <Text style={styles.rowLabel}>Balance Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Balance PO Quantity"
-                value={row.balancePoQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "balancePoQty", text)
-                }
+                placeholder="Balance Qty"
+                value={row.balanceQty}
+                onChangeText={(text) => handleInputChange(index, "balanceQty", text)}
                 keyboardType="numeric"
               />
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Received Quantity</Text>
+              <Text style={styles.rowLabel}>Issue Qty</Text>
               <TextInput
                 style={styles.rowInput}
-                placeholder="Received Quantity"
-                value={row.receivedQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "receivedQty", text)
-                }
+                placeholder="Issue Qty"
+                value={row.issueQty}
+                onChangeText={(text) => handleInputChange(index, "issueQty", text)}
                 keyboardType="numeric"
               />
             </View>
@@ -328,9 +372,7 @@ const GRNGeneral = ({ navigation }) => {
                 style={styles.rowInput}
                 placeholder="Row Remarks"
                 value={row.rowRemarks}
-                onChangeText={(text) =>
-                  handleInputChange(index, "rowRemarks", text)
-                }
+                onChangeText={(text) => handleInputChange(index, "rowRemarks", text)}
               />
             </View>
             {index > 0 && (
@@ -362,9 +404,9 @@ const GRNGeneral = ({ navigation }) => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate("GRNGeneralData")}
+            onPress={() => navigation.navigate("IssueGeneralData")}
           >
-            <Text style={styles.buttonText}>Show GRN General Data</Text>
+            <Text style={styles.buttonText}>Show Issue General Data</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -378,37 +420,13 @@ const GRNGeneral = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Success</Text>
-            <Text style={styles.modalText}>GRN created successfully.</Text>
+            <Text style={styles.modalText}>Issue created successfully.</Text>
             <TouchableOpacity
               style={styles.button}
               onPress={() => {
                 setSuccessModalVisible(false);
-                navigation.navigate("GRNGeneralData");
+                navigation.navigate("IssueGeneralData");
               }}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={errorModalVisible}
-        onRequestClose={() => setErrorModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Error</Text>
-            {errorMessages.map((message, index) => (
-              <Text key={index} style={styles.modalText}>
-                {message}
-              </Text>
-            ))}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setErrorModalVisible(false)}
             >
               <Text style={styles.buttonText}>OK</Text>
             </TouchableOpacity>
@@ -448,6 +466,15 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     marginTop: 5,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 20,
+    marginTop: 5,
+  },
+  picker: {
+    padding: 0,
   },
   row: {
     marginBottom: 15,
@@ -504,4 +531,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GRNGeneral;
+export default IssueGeneral;
