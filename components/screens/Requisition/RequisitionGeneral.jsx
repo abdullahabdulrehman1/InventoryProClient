@@ -179,6 +179,14 @@ const RequisitionGeneral = ({ navigation }) => {
             <Text style={styles.buttonText}>Show Requisition Data</Text>
           </TouchableOpacity>
         </View>
+        <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.pdfButton]}
+          onPress={() => navigation.navigate('RequisitionPDF')}
+        >
+          <Text style={styles.buttonText}>View Demo PDF</Text>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
 
       <ReusableModal

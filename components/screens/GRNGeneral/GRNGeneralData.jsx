@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions } from "@react-navigation/native";
+import axios from "axios";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
+import { useSelector } from "react-redux";
+import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GRNGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
@@ -21,6 +24,10 @@ const GRNGeneralData = ({ navigation }) => {
   const [selectedGRN, setSelectedGRN] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const userRole = useSelector((state) => state?.auth?.user?.role);
 
   const fetchData = async () => {
     setLoading(true);
@@ -29,13 +36,22 @@ const GRNGeneralData = ({ navigation }) => {
       const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
         params: { token },
       });
-      setData(response.data.grn);
+      setData(response.data.grn || []);
+      setError(null);
       console.log(response.data.grn);
     } catch (error) {
       console.error(
         "Error fetching data:",
         error.response ? error.response.data : error.message
       );
+      if (
+        error.response &&
+        error.response.data.message === "GRN returns not found"
+      ) {
+        setError("GRN returns not found");
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
@@ -51,13 +67,17 @@ const GRNGeneralData = ({ navigation }) => {
   }, []);
 
   const handleDelete = async (grnId) => {
+    const token = await AsyncStorage.getItem("token");
     try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.delete(`${ServerUrl}/grnGeneral/delete-grn`, {
-        data: { token, grnId },
-      });
+      const response = await axios.delete(
+        `${ServerUrl}/grnGeneral/delete-grn`,
+        {
+          data: { token, grnId },
+        }
+      );
+      console.log(response.data);
+      setData(data.filter((item) => item._id !== grnId));
       Alert.alert("Success", "GRN deleted successfully.");
-      fetchData();
     } catch (error) {
       console.error(
         "Error deleting GRN:",
@@ -67,11 +87,26 @@ const GRNGeneralData = ({ navigation }) => {
         "Error",
         error.response ? error.response.data.message : "Something went wrong."
       );
+    } finally {
+      setConfirmVisible(false);
     }
   };
 
+  const confirmDelete = (id) => {
+    setDeleteId(id);
+    setConfirmVisible(true);
+  };
+
   const handleEdit = (grn) => {
-    navigation.navigate("GRNGeneralEdit", { grn });
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: "GRNGeneral" },
+          { name: "GRNGeneralEdit", params: { grn } },
+        ],
+      })
+    );
   };
 
   const handleShow = (grn) => {
@@ -84,14 +119,22 @@ const GRNGeneralData = ({ navigation }) => {
     setSelectedGRN(null);
   };
 
+  const closeConfirmModal = () => {
+    setConfirmVisible(false);
+    setDeleteId(null);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate("GRNGeneral")}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.header}>GRN General Data</Text>
-      </View>
+      {userRole !== ROLES.VIEW_ONLY && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate("GRNGeneral")}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.header}>GRN General Data</Text>
+        </View>
+      )}
+
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
@@ -100,37 +143,47 @@ const GRNGeneralData = ({ navigation }) => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {data.map((item, index) => (
-            <View key={item._id} style={styles.dataRow}>
-              <Text>
-                S.No: <Text style={styles.boldText}>{index + 1}</Text>
-              </Text>
-              <Text>
-                GRN Number:{" "}
-                <Text style={styles.boldText}>{item.grnNumber}</Text>
-              </Text>
-              <View style={styles.dataButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleShow(item)}
-                >
-                  <Text style={styles.actionButtonText}>Show</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEdit(item)}
-                >
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleDelete(item._id)}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : Array.isArray(data) && data.length > 0 ? (
+            data.map((item, index) => (
+              <View key={item._id} style={styles.dataRow}>
+                <Text>
+                  S.No: <Text style={styles.boldText}>{index + 1}</Text>
+                </Text>
+                <Text>
+                  GRN Number:{" "}
+                  <Text style={styles.boldText}>{item.grnNumber}</Text>
+                </Text>
+                <View style={styles.dataButtons}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleShow(item)}
+                  >
+                    <Text style={styles.actionButtonText}>Show</Text>
+                  </TouchableOpacity>
+                  {userRole !== ROLES.VIEW_ONLY && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleEdit(item)}
+                      >
+                        <Text style={styles.actionButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => confirmDelete(item._id)}
+                      >
+                        <Text style={styles.actionButtonText}>Delete</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          ) : (
+            <Text style={styles.noRecordText}>No record found</Text>
+          )}
         </ScrollView>
       )}
 
@@ -242,6 +295,36 @@ const GRNGeneralData = ({ navigation }) => {
           </View>
         </Modal>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={confirmVisible}
+        onRequestClose={closeConfirmModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>Confirm Delete</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to delete this GRN?
+            </Text>
+            <View style={styles.dataButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={closeConfirmModal}
+              >
+                <Text style={styles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.deleteButton]}
+                onPress={() => handleDelete(deleteId)}
+              >
+                <Text style={styles.actionButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -281,6 +364,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 5,
     flex: 1,
+  },
+  cancelButton: {
+    backgroundColor: "#1b1f26",
+  },
+  deleteButton: {
+    backgroundColor: "#1b1f26",
   },
   actionButtonText: {
     color: "#fff",
@@ -335,6 +424,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 16,
+  },
+  noRecordText: {
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 18,
+    color: "#888",
+  },
+  errorText: {
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 18,
+    color: "red",
   },
 });
 

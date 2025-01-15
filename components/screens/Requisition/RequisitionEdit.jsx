@@ -23,7 +23,7 @@ import ButtonStyles from "../../styles/ButtonStyles.js";
 import FormStyles from "../../styles/FormStyles.js";
 import ModalStyles from "../../styles/ModalStyles.js";
 import { CommonActions } from "@react-navigation/native";
-
+import * as SecureStore from "expo-secure-store";
 const RequisitionEdit = ({ navigation, route }) => {
   const { requisition } = route.params;
   const [updateRequisition, { isLoading }] = useUpdateRequisitionMutation();
@@ -109,8 +109,8 @@ const RequisitionEdit = ({ navigation, route }) => {
   };
 
   const handleSubmit = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
     const items = rows;
     const [day, month, year] = formValues.date.split("-");

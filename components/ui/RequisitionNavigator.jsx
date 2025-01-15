@@ -4,6 +4,7 @@ import RequisitionEdit from "../screens/Requisition/RequisitionEdit";
 import RequisitionData from "../screens/Requisition/RequisitionData";
 import { useSelector } from "react-redux";
 import { ROLES } from "../auth/role";
+import PdfPage from "../screens/Requisition/PdfPage";
 
 const Stack = createStackNavigator();
 
@@ -24,6 +25,7 @@ function RequisitionNavigator() {
             />
             <Stack.Screen name="RequisitionEdit" component={RequisitionEdit} />
             <Stack.Screen name="RequisitionData" component={RequisitionData} />
+            <Stack.Screen name="RequisitionPDF" component={PdfPage} />
           </Stack.Navigator>
         );
       case ROLES.NORMAL:
@@ -38,6 +40,7 @@ function RequisitionNavigator() {
             />
             <Stack.Screen name="RequisitionEdit" component={RequisitionEdit} />
             <Stack.Screen name="RequisitionData" component={RequisitionData} />
+            <Stack.Screen name="RequisitionPDF" component={PdfPage} />
           </Stack.Navigator>
         );
       case ROLES.VIEW_ONLY:

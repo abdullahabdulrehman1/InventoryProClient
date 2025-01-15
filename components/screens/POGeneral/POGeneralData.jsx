@@ -13,9 +13,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CommonActions } from "@react-navigation/native";
-
+import { useSelector } from "react-redux";
+import { ROLES } from "../../auth/role";
+import * as SecureStore from "expo-secure-store";
 const POGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,14 +25,17 @@ const POGeneralData = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const userRole = useSelector((state) => state?.auth?.user?.role);
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = await AsyncStorage.getItem("token");
+      const token = await SecureStore.getItemAsync("token");
       try {
-        const response = await axios.get(
-          `${ServerUrl}/poGeneral/showPO?token=${token}`
-        );
+        const response = await axios.get(`${ServerUrl}/poGeneral/showPO`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setData(response.data);
         console.log(response.data);
       } catch (error) {
@@ -43,17 +47,18 @@ const POGeneralData = ({ navigation }) => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   const handleDelete = async (id) => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.delete(`${ServerUrl}/poGeneral/deletePO`, {
         data: {
-          token: token,
           purchaseOrderId: id,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
       });
       console.log(response.data);
@@ -103,12 +108,15 @@ const POGeneralData = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate("POGeneral")}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.header}>PO General Data</Text>
-      </View>
+      {userRole !== ROLES.VIEW_ONLY && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate("POGeneral")}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.header}>PO General Data</Text>
+        </View>
+      )}
+
       {serverMessage ? (
         <View style={styles.messageContainer}>
           <Text style={styles.messageText}>{serverMessage}</Text>
@@ -133,18 +141,22 @@ const POGeneralData = ({ navigation }) => {
                 >
                   <Text style={styles.actionButtonText}>Show</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEdit(item)}
-                >
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => confirmDelete(item._id)}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
+                {userRole !== ROLES.VIEW_ONLY && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleEdit(item)}
+                    >
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => confirmDelete(item._id)}
+                    >
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           ))}

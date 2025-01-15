@@ -1,22 +1,18 @@
 // DrawerNavigator.js
-import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import React from "react";
 import { TouchableOpacity, View } from "react-native";
-import CustomDrawerContent from "./CustomDrawerContent";
-import IssueGeneral from "../screens/IssueGeneral/IssueGeneral";
-import IssueReturnGeneral from "../screens/IssueReturnGeneral/IssueReturnGeneral";
-import GRNReturnGeneral from "../screens/GRNReturnGeneral/GRNReturnGeneral";
-import POGeneralNavigator from "./POGeneralNavigator";
-import RequisitionNavigator from "./RequisitionNavigator";
 import { useSelector } from "react-redux";
 import { ROLES } from "../auth/role";
 import AdminPanelNavigator from "./AdminNavigator";
+import CustomDrawerContent from "./CustomDrawerContent";
 import GRNGeneralNavigator from "./GRNGeneralNavigator";
-import GRNGeneral from "./../screens/GRNGeneral/GRNGeneral";
 import GRNReturnGeneralNavigator from "./GRNReturnGeneralNaviagator";
 import IssueGeneralNavigator from "./IssueGeneralNavigator";
 import IssueReturnGeneralNavigator from "./IssueReturnGeneralNavigator";
+import POGeneralNavigator from "./POGeneralNavigator";
+import RequisitionNavigator from "./RequisitionNavigator";
 
 const Drawer = createDrawerNavigator();
 const DrawerNavigator = () => {
@@ -61,7 +57,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="GRN General"
-              component={GRNGeneral}
+              component={GRNGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons name="receipt-outline" color={color} size={size} />
@@ -79,7 +75,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="Issue Return General"
-              component={IssueReturnGeneral}
+              component={IssueReturnGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons
@@ -92,7 +88,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="GRN Return General"
-              component={GRNReturnGeneral}
+              component={GRNReturnGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons
@@ -203,7 +199,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="GRN General"
-              component={GRNGeneral}
+              component={GRNGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons name="receipt-outline" color={color} size={size} />
@@ -212,7 +208,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="Issue General"
-              component={IssueGeneral}
+              component={IssueGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons name="send-outline" color={color} size={size} />
@@ -221,7 +217,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="Issue Return General"
-              component={IssueReturnGeneral}
+              component={IssueReturnGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons
@@ -234,7 +230,7 @@ const DrawerNavigator = () => {
             />
             <Drawer.Screen
               name="GRN Return General"
-              component={GRNReturnGeneral}
+              component={GRNReturnGeneralNavigator}
               options={{
                 drawerIcon: ({ color, size }) => (
                   <Ionicons

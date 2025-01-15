@@ -1,6 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { validateForm } from "./formValidation";
+import * as SecureStore from "expo-secure-store";
 
 export const handleSubmit = async ({
   formValues,
@@ -31,21 +32,29 @@ export const handleSubmit = async ({
   if (Object.keys(validationErrors).length === 0) {
     console.log("Form validation passed");
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
     const items = rows;
     const [day, month, year] = formValues.date.split("-");
     const isoDate = new Date(`${year}-${month}-${day}`).toISOString();
 
     try {
-      const response = await axios.post(apiEndpoint, {
-        userId,
-        token,
-        ...formValues,
-        date: isoDate,
-        items,
-      });
+      const response = await axios.post(
+        apiEndpoint,
+        {
+          userId,
+
+          ...formValues,
+          date: isoDate,
+          items,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        }
+      );
 
       console.log("Server Response:", response.data.message);
 

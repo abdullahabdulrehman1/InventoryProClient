@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -16,9 +17,13 @@ import ServerUrl from "../../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
-
+import * as SecureStore from "expo-secure-store";
 const RequisitionData = ({ navigation }) => {
   const [data, setData] = useState([]);
+
+  const [page, setPage] = useState(1);
+  const [isFetching, setIsFetching] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [serverMessage, setServerMessage] = useState("");
@@ -27,37 +32,64 @@ const RequisitionData = ({ navigation }) => {
   const [deleteId, setDeleteId] = useState(null);
   const userRole = useSelector((state) => state?.auth?.user?.role);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = await AsyncStorage.getItem("token");
-      try {
-        const response = await axios.get(
-          `${ServerUrl}/requisition/showRequisition?token=${token}`
-        );
-        setData(response.data);
-        console.log(response.data);
-      } catch (error) {
-        console.error(
-          "Error fetching data:",
-          error.response ? error.response.data : error.message
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async (pageNumber = 1) => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
 
-    fetchData();
+      if (token) {
+        setIsFetching(true);
+        const response = await axios.get(
+          `${ServerUrl}/requisition/showRequisition`,
+          {
+            params: {
+              page: pageNumber,
+              limit: 10,
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const { data: newData, totalPages: fetchedTotalPages } = response.data;
+
+        setData((prevData) =>
+          pageNumber === 1 ? newData : [...prevData, ...newData]
+        );
+        setTotalPages(fetchedTotalPages);
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching data:",
+        error.response ? error.response.data : error.message
+      );
+    } finally {
+      setLoading(false);
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(1);
   }, []);
 
+  const handleLoadMore = () => {
+    if (page < totalPages && !isFetching) {
+      setPage((prevPage) => prevPage + 1);
+      fetchData(page + 1);
+    }
+  };
   const handleDelete = async (id) => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.delete(
         `${ServerUrl}/requisition/deleteRequisition`,
         {
           data: {
-            token: token,
             requisitionId: id,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -97,6 +129,40 @@ const RequisitionData = ({ navigation }) => {
     setConfirmVisible(false);
     setDeleteId(null);
   };
+  const renderItem = ({ item }) => (
+    <View style={styles.dataRow}>
+      <Text>
+        DR #: <Text style={styles.boldText}>{item.drNumber}</Text>
+      </Text>
+      <Text>
+        Department: <Text style={styles.boldText}>{item.department}</Text>
+      </Text>
+      <View style={styles.dataButtons}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleShow(item)}
+        >
+          <Text style={styles.actionButtonText}>Show</Text>
+        </TouchableOpacity>
+        {userRole !== ROLES.VIEW_ONLY && (
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEdit(item)}
+            >
+              <Text style={styles.actionButtonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => confirmDelete(item._id)}
+            >
+              <Text style={styles.actionButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -121,43 +187,18 @@ const RequisitionData = ({ navigation }) => {
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
-        <ScrollView>
-          {data.map((item) => (
-            <View key={item._id} style={styles.dataRow}>
-              <Text>
-                DR #: <Text style={styles.boldText}>{item.drNumber}</Text>
-              </Text>
-              <Text>
-                Department:{" "}
-                <Text style={styles.boldText}>{item.department}</Text>
-              </Text>
-              <View style={styles.dataButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleShow(item)}
-                >
-                  <Text style={styles.actionButtonText}>Show</Text>
-                </TouchableOpacity>
-                {userRole !== ROLES.VIEW_ONLY && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleEdit(item)}
-                    >
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => confirmDelete(item._id)}
-                    >
-                      <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item._id || index.toString()}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetching ? (
+              <ActivityIndicator size="small" color="#1b1f26" />
+            ) : null
+          }
+        />
       )}
 
       {selectedRequisition && (

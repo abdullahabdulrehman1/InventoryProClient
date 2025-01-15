@@ -1,22 +1,23 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Button,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
   TextInput,
-  Button,
   TouchableOpacity,
-  ScrollView,
-  Alert,
-  Modal,
-  ActivityIndicator,
+  View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
 import { useDispatch } from "react-redux";
-import { userExist } from "../redux/reducers/auth";
 import ServerUrl from "../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { userExist } from "../redux/reducers/auth";
+import * as SecureStore from 'expo-secure-store';
+
 
 const CustomAlert = ({ visible, title, message, onClose }) => {
   return (
@@ -87,9 +88,11 @@ const Login = ({ navigation }) => {
       if (response.status === 200 && response.data.success) {
         console.log(response.data);
 
+        await SecureStore.setItemAsync("token", response.data.token);
+        await SecureStore.setItemAsync("user", JSON.stringify(response.data.user));
         // Store token and user in AsyncStorage
-        await AsyncStorage.setItem("token", response.data.token);
-        await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
+        // await AsyncStorage.setItem("token", response.data.token);
+        // await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
 
         dispatch(userExist(response.data.user));
         // Navigate to the home screen or another screen

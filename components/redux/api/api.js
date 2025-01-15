@@ -3,8 +3,11 @@ import ServerUrl from "../../config/ServerUrl";
 
 const api = createApi({
   reducerPath: "api",
+  
   baseQuery: fetchBaseQuery({ baseUrl: `${ServerUrl}/` }),
-  tagTypes: ["User", "Requisition", "PO"],
+  
+  tagTypes: ["User", "Requisition", "PO", "Report"],
+  
   endpoints: (builder) => ({
     myProfile: builder.query({
       query: () => ({
@@ -19,19 +22,33 @@ const api = createApi({
         url: `requisition/updateRequisition`,
         method: "PUT",
         body: {
-          token,
           requisitionId,
           updateData,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
       }),
       invalidatesTags: ["Requisition"],
     }),
     createPO: builder.mutation({
-      query: ({ token, userId, poNumber, date, poDelivery, requisitionType, supplier, store, payment, purchaser, remarks, rows }) => ({
+      query: ({
+        token,
+        userId,
+        poNumber,
+        date,
+        poDelivery,
+        requisitionType,
+        supplier,
+        store,
+        payment,
+        purchaser,
+        remarks,
+        rows,
+      }) => ({
         url: `poGeneral/createPO`,
         method: "POST",
         body: {
-          token,
           userId,
           poNumber,
           date,
@@ -44,11 +61,37 @@ const api = createApi({
           remarks,
           rows,
         },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }),
       invalidatesTags: ["PO"],
+    }),
+    generatePdfReport: builder.mutation({
+      query: ({ token, fromDate, toDate, sortBy, order, selectedColumns }) => ({
+        url: `requisition/generatePdfReport`,
+        method: "GET",
+        params: {
+          fromDate,
+          toDate,
+          sortBy,
+          order,
+          columns: selectedColumns.join(","),
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      invalidatesTags: ["Report"],
     }),
   }),
 });
 
 export default api;
-export const { useGetMyProfileQuery, useUpdateRequisitionMutation, useCreatePOMutation } = api;
+
+export const {
+  useGetMyProfileQuery,
+  useUpdateRequisitionMutation,
+  useCreatePOMutation,
+  useGeneratePdfReportMutation,
+} = api;

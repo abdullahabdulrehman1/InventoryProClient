@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import React from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 const FormFields = ({ fields, values, onChange, errors }) => {
   return (

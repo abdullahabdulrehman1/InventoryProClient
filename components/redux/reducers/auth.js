@@ -25,3 +25,5 @@ const authSlice = createSlice({
 });
 export default authSlice;
 export const { userExist, userNotExist, setLoading } = authSlice.actions;
+
+

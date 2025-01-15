@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import { CommonActions } from "@react-navigation/native";
-
+import * as SecureStore from "expo-secure-store";
 const POGeneralEdit = ({ navigation, route }) => {
   const { po } = route.params; // Assuming PO data is passed via route params
 
@@ -78,8 +78,8 @@ const POGeneralEdit = ({ navigation, route }) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsnyc("token");
+    const user = await SecureStore.getItemAsnyc("user");
     const userId = JSON.parse(user)._id;
     const items = rows;
     const [day, month, year] = date.split("-");
@@ -93,7 +93,7 @@ const POGeneralEdit = ({ navigation, route }) => {
       const response = await axios.put(
         `${ServerUrl}/poGeneral/editPurchaseOrder`,
         {
-          token,
+          userId,
           purchaseOrderId: po._id,
           updateData: {
             userId,
@@ -107,6 +107,11 @@ const POGeneralEdit = ({ navigation, route }) => {
             purchaser,
             remarks,
             rows: items,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
         }
       );

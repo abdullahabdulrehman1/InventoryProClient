@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
+import { useSelector } from "react-redux";
+import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GRNReturnGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
@@ -23,6 +25,7 @@ const GRNReturnGeneralData = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const userRole = useSelector((state) => state?.auth?.user?.role);
 
   const fetchData = async () => {
     setLoading(true);
@@ -108,14 +111,17 @@ const GRNReturnGeneralData = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("GRNReturnGeneral")}
-        >
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.header}>GRN Return General Data</Text>
-      </View>
+      {userRole !== ROLES.VIEW_ONLY && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("GRNReturnGeneral")}
+          >
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.header}>GRN Return General Data</Text>
+        </View>
+      )}
+
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
@@ -153,18 +159,22 @@ const GRNReturnGeneralData = ({ navigation }) => {
                 >
                   <Text style={styles.actionButtonText}>Show</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEdit(item)}
-                >
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => confirmDelete(item._id)}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
+                {userRole !== ROLES.VIEW_ONLY && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleEdit(item)}
+                    >
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => confirmDelete(item._id)}
+                    >
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           ))}

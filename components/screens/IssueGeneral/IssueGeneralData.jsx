@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
+import { ROLES } from "../../auth/role";
 
 const IssueGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
@@ -23,14 +25,18 @@ const IssueGeneralData = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const userRole = useSelector((state) => state?.auth?.user?.role);
 
   const fetchData = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
     try {
-      const response = await axios.get(`${ServerUrl}/issueGeneral/get-issue-general`, {
-        params: { token },
-      });
+      const response = await axios.get(
+        `${ServerUrl}/issueGeneral/get-issue-general`,
+        {
+          params: { token },
+        }
+      );
       setData(response.data);
     } catch (error) {
       console.error(
@@ -99,12 +105,15 @@ const IssueGeneralData = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate("IssueGeneral")}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.header}>Issue General Data</Text>
-      </View>
+      {userRole !== ROLES.VIEW_ONLY && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate("IssueGeneral")}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.header}>Issue General Data</Text>
+        </View>
+      )}
+
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
@@ -119,10 +128,14 @@ const IssueGeneralData = ({ navigation }) => {
                 S.No: <Text style={styles.boldText}>{index + 1}</Text>
               </Text>
               <Text>
-                GRN Number: <Text style={styles.boldText}>{item.grnNumber}</Text>
+                GRN Number:{" "}
+                <Text style={styles.boldText}>{item.grnNumber}</Text>
               </Text>
               <Text>
-                Issue Date: <Text style={styles.boldText}>{new Date(item.issueDate).toLocaleDateString()}</Text>
+                Issue Date:{" "}
+                <Text style={styles.boldText}>
+                  {new Date(item.issueDate).toLocaleDateString()}
+                </Text>
               </Text>
               <View style={styles.dataButtons}>
                 <TouchableOpacity
@@ -131,18 +144,22 @@ const IssueGeneralData = ({ navigation }) => {
                 >
                   <Text style={styles.actionButtonText}>Show</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEdit(item)}
-                >
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => confirmDelete(item._id)}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
+                {userRole !== ROLES.VIEW_ONLY && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleEdit(item)}
+                    >
+                      <Text style={styles.actionButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => confirmDelete(item._id)}
+                    >
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           ))}
@@ -163,11 +180,15 @@ const IssueGeneralData = ({ navigation }) => {
                 <View style={styles.modalFieldsContainer}>
                   <Text style={styles.modalText}>
                     GRN Number:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.grnNumber}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.grnNumber}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Issue Date:{" "}
-                    <Text style={styles.boldText}>{new Date(selectedIssue.issueDate).toLocaleDateString()}</Text>
+                    <Text style={styles.boldText}>
+                      {new Date(selectedIssue.issueDate).toLocaleDateString()}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Store:{" "}
@@ -175,27 +196,39 @@ const IssueGeneralData = ({ navigation }) => {
                   </Text>
                   <Text style={styles.modalText}>
                     Requisition Type:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.requisitionType}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.requisitionType}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Issue To Unit:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.issueToUnit}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.issueToUnit}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Demand No:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.demandNo}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.demandNo}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Vehicle Type:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.vehicleType}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.vehicleType}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Issue To Department:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.issueToDepartment}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.issueToDepartment}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Vehicle No:{" "}
-                    <Text style={styles.boldText}>{selectedIssue.vehicleNo}</Text>
+                    <Text style={styles.boldText}>
+                      {selectedIssue.vehicleNo}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Driver:{" "}
@@ -209,36 +242,47 @@ const IssueGeneralData = ({ navigation }) => {
                     <View key={index}>
                       <View style={styles.row}>
                         <Text style={styles.modalText}>
-                          Action: <Text style={styles.boldText}>{row.action}</Text>
+                          Action:{" "}
+                          <Text style={styles.boldText}>{row.action}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Serial No: <Text style={styles.boldText}>{row.serialNo}</Text>
+                          Serial No:{" "}
+                          <Text style={styles.boldText}>{row.serialNo}</Text>
                         </Text>
                         <Text style={styles.modalText}>
                           Level 3 Item Category:{" "}
-                          <Text style={styles.boldText}>{row.level3ItemCategory}</Text>
+                          <Text style={styles.boldText}>
+                            {row.level3ItemCategory}
+                          </Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Item Name: <Text style={styles.boldText}>{row.itemName}</Text>
+                          Item Name:{" "}
+                          <Text style={styles.boldText}>{row.itemName}</Text>
                         </Text>
                         <Text style={styles.modalText}>
                           UOM: <Text style={styles.boldText}>{row.uom}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          GRN Qty: <Text style={styles.boldText}>{row.grnQty}</Text>
+                          GRN Qty:{" "}
+                          <Text style={styles.boldText}>{row.grnQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
                           Previous Issue Qty:{" "}
-                          <Text style={styles.boldText}>{row.previousIssueQty}</Text>
+                          <Text style={styles.boldText}>
+                            {row.previousIssueQty}
+                          </Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Balance Qty: <Text style={styles.boldText}>{row.balanceQty}</Text>
+                          Balance Qty:{" "}
+                          <Text style={styles.boldText}>{row.balanceQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Issue Qty: <Text style={styles.boldText}>{row.issueQty}</Text>
+                          Issue Qty:{" "}
+                          <Text style={styles.boldText}>{row.issueQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Row Remarks: <Text style={styles.boldText}>{row.rowRemarks}</Text>
+                          Row Remarks:{" "}
+                          <Text style={styles.boldText}>{row.rowRemarks}</Text>
                         </Text>
                       </View>
                       <View style={styles.separator} />
