@@ -17,7 +17,7 @@ import * as Sharing from "expo-sharing";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
 import { useGeneratePdfReportMutation } from "../../redux/api/api"; // Adjust the path to your API slice
-
+import PdfPageUtil from "../../utils/pdfFormutil"; // Adjust the path to your util file       
 const PdfPage = ({ navigation }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -61,6 +61,12 @@ const PdfPage = ({ navigation }) => {
       return;
     }
 
+    // Show an alert to notify the user that the request is being processed
+    Alert.alert(
+      "Please Wait",
+      "Your request is being processed. This may take a few moments."
+    );
+
     setLoading(true);
     try {
       const token = await SecureStore.getItemAsync("token");
@@ -90,7 +96,10 @@ const PdfPage = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Error fetching PDF:", error);
-      Alert.alert("Error", error?.data?.message);
+      Alert.alert(
+        "Error",
+        error?.data?.message || "An unexpected error occurred"
+      );
     } finally {
       setLoading(false);
     }
@@ -100,123 +109,30 @@ const PdfPage = ({ navigation }) => {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.header}>Generate Report</Text>
-        </View>
+    
 
-        {/* Date Pickers */}
-        <View style={styles.dateContainer}>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowStartDatePicker(true)}
-          >
-            <Text style={styles.dateButtonText}>
-              {startDate ? startDate.toLocaleDateString() : "Select start date"}
-            </Text>
-          </TouchableOpacity>
-          {showStartDatePicker && (
-            <DateTimePicker
-              value={startDate || new Date()}
-              mode="date"
-              display="default"
-              minimumDate={oneYearAgo}
-              maximumDate={new Date()}
-              onChange={(event, selectedDate) => {
-                setShowStartDatePicker(false);
-                if (selectedDate) {
-                  setStartDate(selectedDate);
-                }
-              }}
-            />
-          )}
-        </View>
-
-        <View style={styles.dateContainer}>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowEndDatePicker(true)}
-          >
-            <Text style={styles.dateButtonText}>
-              {endDate ? endDate.toLocaleDateString() : "Select end date"}
-            </Text>
-          </TouchableOpacity>
-          {showEndDatePicker && (
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display="default"
-              minimumDate={oneYearAgo}
-              maximumDate={new Date()}
-              onChange={(event, selectedDate) => {
-                setShowEndDatePicker(false);
-                if (selectedDate) {
-                  setEndDate(selectedDate);
-                }
-              }}
-            />
-          )}
-        </View>
-
-        {/* Sort By Picker */}
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}>Sort By:</Text>
-          <Picker
-            selectedValue={sortBy}
-            onValueChange={(value) => setSortBy(value)}
-          >
-            <Picker.Item label="Date" value="date" />
-            <Picker.Item label="Amount" value="amount" />
-            <Picker.Item label="Department" value="department" />
-          </Picker>
-        </View>
-
-        {/* Order Picker */}
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}>Order:</Text>
-          <Picker
-            selectedValue={order}
-            onValueChange={(value) => setOrder(value)}
-          >
-            <Picker.Item label="Ascending" value="asc" />
-            <Picker.Item label="Descending" value="desc" />
-          </Picker>
-        </View>
-
-        {/* Column Selection */}
-        <View style={styles.columnsContainer}>
-          <Text style={styles.label}>Select Columns:</Text>
-          {availableColumns.map((col) => (
-            <TouchableOpacity
-              key={col.value}
-              onPress={() => toggleColumn(col.value)}
-              style={[
-                styles.columnOption,
-                selectedColumns.includes(col.value) && styles.selectedColumn,
-              ]}
-            >
-              <Text>{col.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Generate Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={fetchAndDownloadPdf}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Download PDF</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+    
+    // Usage:
+    <PdfPageUtil
+      navigation={navigation}
+      initialSelectedColumns={["drNumber", "date", "itemName", "quantity", "amount"]}
+      availableColumns={[
+        { label: "DR Number", value: "drNumber" },
+        { label: "Date", value: "date" },
+        { label: "Department", value: "department" },
+        { label: "Requisition Type", value: "requisitionType" },
+        { label: "Item Name", value: "itemName" },
+        { label: "Quantity", value: "quantity" },
+        { label: "Rate", value: "rate" },
+        { label: "Amount", value: "amount" },
+      ]}
+      sortOptions={[
+        { label: "Date", value: "date" },
+        { label: "Amount", value: "amount" },
+        { label: "Department", value: "department" },
+      ]}
+      fetchPdf={fetchAndDownloadPdf}
+    />);
 };
 
 const styles = StyleSheet.create({
