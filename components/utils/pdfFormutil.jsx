@@ -3,71 +3,98 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   Text,
   SafeAreaView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { StatusBar } from "expo-status-bar";
 import { Picker } from "@react-native-picker/picker";
+import { StatusBar } from "expo-status-bar";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
 const PdfPageUtil = ({
   navigation,
   initialSelectedColumns,
   availableColumns,
   sortOptions,
-  fetchPdf, // Fetch PDF function passed as a prop
+  fetchPdf,
+  onStartDateChange,
+  onEndDateChange,
+  onSortByChange,
+  onOrderChange,
+  onSelectedColumnsChange,
+  loading, // Receive loading state as prop
 }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [sortBy, setSortBy] = useState("date");
+  const [order, setOrder] = useState("asc");
+  const [selectedColumns, setSelectedColumns] = useState(initialSelectedColumns);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [sortBy, setSortBy] = useState(sortOptions[0]?.value || "date");
-  const [order, setOrder] = useState("asc");
-  const [selectedColumns, setSelectedColumns] = useState(
-    initialSelectedColumns
-  );
 
-  const toggleColumn = (column) => {
-    setSelectedColumns((prev) =>
-      prev.includes(column)
-        ? prev.filter((c) => c !== column)
-        : [...prev, column]
-    );
-  };
-  const handleDownloadPdf = async () => {
- 
-    Alert.alert(
-      "Please Wait",
-      "Your request is being processed. This may take a few moments."
-    );
-  
-    try {
-      console.log("Start Date:", startDate);
-      console.log("End Date:", endDate);
-  
-      await fetchPdf({
-        fromDate: startDate.toISOString().split("T")[0], // Convert to ISO string
-        toDate: endDate.toISOString().split("T")[0], // Convert to ISO string
-        selectedColumns,
-        sortBy,
-        order,
-      });
-    } catch (error) {
-      console.error("Error fetching PDF:", error);
-      Alert.alert(
-        "Error",
-        error.message || "An unexpected error occurred while fetching the PDF."
-      );
+  const handleStartDateChange = (event, selectedDate) => {
+    setShowStartDatePicker(false);
+    if (selectedDate) {
+      setStartDate(selectedDate);
+      onStartDateChange(selectedDate);
     }
   };
-  
 
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const handleEndDateChange = (event, selectedDate) => {
+    setShowEndDatePicker(false);
+    if (selectedDate) {
+      setEndDate(selectedDate);
+      onEndDateChange(selectedDate);
+    }
+  };
+
+  const handleSortByChange = (value) => {
+    setSortBy(value);
+    onSortByChange(value);
+  };
+
+  const handleOrderChange = (value) => {
+    setOrder(value);
+    onOrderChange(value);
+  };
+
+  const toggleColumn = (column) => {
+    const newSelectedColumns = selectedColumns.includes(column)
+      ? selectedColumns.filter((c) => c !== column)
+      : [...selectedColumns, column];
+    setSelectedColumns(newSelectedColumns);
+    onSelectedColumnsChange(newSelectedColumns);
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const response = await fetchPdf();
+      if (response && response.url) {
+        const fileUri = `${FileSystem.documentDirectory}${response.url.split("/").pop()}`;
+        const downloadResumable = FileSystem.createDownloadResumable(
+          response.url,
+          fileUri
+        );
+        const { uri } = await downloadResumable.downloadAsync();
+
+        Alert.alert("Success", "PDF report generated successfully");
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri);
+        } else {
+          Alert.alert("Error", "Sharing is not available on this device");
+        }
+      } 
+    } catch (error) {
+      console.error("Error fetching PDF:", error);
+      Alert.alert("Error",error.data.message || "An unexpected error occurred");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,15 +121,9 @@ const PdfPageUtil = ({
               value={startDate || new Date()}
               mode="date"
               display="default"
-              minimumDate={oneYearAgo}
+              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
               maximumDate={new Date()}
-              onChange={(event, selectedDate) => {
-                setShowStartDatePicker(false);
-                if (selectedDate) {
-                  console.log("Start Date Selected:", selectedDate);
-                  setStartDate(selectedDate);
-                }
-              }}
+              onChange={handleStartDateChange}
             />
           )}
         </View>
@@ -121,15 +142,9 @@ const PdfPageUtil = ({
               value={endDate || new Date()}
               mode="date"
               display="default"
-              minimumDate={oneYearAgo}
+              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
               maximumDate={new Date()}
-              onChange={(event, selectedDate) => {
-                setShowEndDatePicker(false);
-                if (selectedDate) {
-                  console.log("End Date Selected:", selectedDate);
-                  setEndDate(selectedDate);
-                }
-              }}
+              onChange={handleEndDateChange}
             />
           )}
         </View>
@@ -139,7 +154,7 @@ const PdfPageUtil = ({
           <Text style={styles.label}>Sort By:</Text>
           <Picker
             selectedValue={sortBy}
-            onValueChange={(value) => setSortBy(value)}
+            onValueChange={(value) => handleSortByChange(value)}
           >
             {sortOptions.map((option) => (
               <Picker.Item
@@ -156,7 +171,7 @@ const PdfPageUtil = ({
           <Text style={styles.label}>Order:</Text>
           <Picker
             selectedValue={order}
-            onValueChange={(value) => setOrder(value)}
+            onValueChange={(value) => handleOrderChange(value)}
           >
             <Picker.Item label="Ascending" value="asc" />
             <Picker.Item label="Descending" value="desc" />
@@ -182,8 +197,16 @@ const PdfPageUtil = ({
 
         {/* Generate Button */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleDownloadPdf}>
-            <Text style={styles.buttonText}>Download PDF</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleDownloadPdf}
+            disabled={loading} // Disable button when loading
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Download PDF</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
