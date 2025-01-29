@@ -78,60 +78,42 @@ export const poGeneralValidationRules = [
     field: "rows",
     validations: {
       prNo: [
-        {
-          method: validationMethods.required,
-          message: "PR No is required",
-        },
+        { method: validationMethods.required, message: "PR No is required" },
       ],
       department: [
-        {
-          method: validationMethods.required,
-          message: "Department is required",
-        },
+        { method: validationMethods.required, message: "Department is required" },
       ],
       category: [
-        {
-          method: validationMethods.required,
-          message: "Category is required",
-        },
+        { method: validationMethods.required, message: "Category is required" },
       ],
       name: [
-        {
-          method: validationMethods.required,
-          message: "Item Name is required",
-        },
+        { method: validationMethods.required, message: "Item Name is required" },
       ],
-      uom: [{ method: validationMethods.required, message: "UOM is required" }],
+      uom: [
+        { method: validationMethods.required, message: "UOM is required" },
+      ],
       quantity: [
         { method: validationMethods.required, message: "Quantity is required" },
-        {
-          method: validationMethods.isNumber,
-          message: "Quantity must be a number",
-        },
+        { method: validationMethods.isNumber, message: "Quantity must be a number" },
       ],
       rate: [
         { method: validationMethods.required, message: "Rate is required" },
-        {
-          method: validationMethods.isNumber,
-          message: "Rate must be a number",
-        },
+        { method: validationMethods.isNumber, message: "Rate must be a number" },
+      ],
+      gstPercent: [
+        { method: validationMethods.required, message: "GST Percent is required" },
+        { method: validationMethods.isNumber, message: "GST Percent must be a number" },
       ],
       discountAmount: [
         { method: validationMethods.required, message: "Discount Amount is required" },
-        {
-          method: validationMethods.isNumber,
-          message: "Discount Amount must be a number",
-        },
+        { method: validationMethods.isNumber, message: "Discount Amount must be a number" },
       ],
       otherChargesAmount: [
         { method: validationMethods.required, message: "Other Charges Amount is required" },
-        {
-          method: validationMethods.isNumber,
-          message: "Other Charges Amount must be a number",
-        },
+        { method: validationMethods.isNumber, message: "Other Charges Amount must be a number" },
       ],
       rowRemarks: [
-        { method: validationMethods.required, message: "Remarks are required" },
+        { method: validationMethods.required, message: "Row Remarks are required" },
       ],
     },
   },

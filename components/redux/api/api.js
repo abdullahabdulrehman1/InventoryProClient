@@ -70,7 +70,9 @@ const api = createApi({
     generatePdfReport: builder.mutation({
       query: ({ token, fromDate, toDate, sortBy, order, selectedColumns }) => ({
         url: `requisition/generatePdfReport`,
-        method: "GET",
+        method: "GET",headers: {
+          Authorization: `Bearer ${token}`,
+        },
         params: {
           fromDate,
           toDate,
@@ -78,9 +80,7 @@ const api = createApi({
           order,
           columns: selectedColumns.join(","),
         },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        
       }),
       invalidatesTags: ["Report"],
     }),

@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CommonActions } from "@react-navigation/native";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
+import * as SecureStore from "expo-secure-store";
 import {
   ActivityIndicator,
   Alert,
@@ -31,10 +32,13 @@ const GRNGeneralData = ({ navigation }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
+
     try {
       const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
-        params: { token },
+        params: { token }, headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       setData(response.data.grn || []);
       setError(null);
@@ -67,13 +71,17 @@ const GRNGeneralData = ({ navigation }) => {
   }, []);
 
   const handleDelete = async (grnId) => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.delete(
         `${ServerUrl}/grnGeneral/delete-grn`,
         {
           data: { token, grnId },
-        }
+        }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
       );
       console.log(response.data);
       setData(data.filter((item) => item._id !== grnId));

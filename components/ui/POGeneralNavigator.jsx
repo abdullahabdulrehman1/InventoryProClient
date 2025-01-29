@@ -4,6 +4,7 @@ import POGeneralData from "../screens/POGeneral/POGeneralData";
 import POGeneralEdit from "../screens/POGeneral/POGeneralEdit";
 import { useSelector } from "react-redux";
 import { ROLES } from "../auth/role";
+import POPdfPage from "../screens/POGeneral/POPdfPage";
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ function POGeneralNavigator() {
             <Stack.Screen name="POGeneral" component={POGeneral} />
             <Stack.Screen name="POGeneralData" component={POGeneralData} />
             <Stack.Screen name="POGeneralEdit" component={POGeneralEdit} />
+            <Stack.Screen name="POGeneralPDF" component={POPdfPage} />
           </Stack.Navigator>
         );
       case ROLES.NORMAL:
@@ -32,6 +34,7 @@ function POGeneralNavigator() {
             <Stack.Screen name="POGeneral" component={POGeneral} />
             <Stack.Screen name="POGeneralData" component={POGeneralData} />
             <Stack.Screen name="POGeneralEdit" component={POGeneralEdit} />
+            <Stack.Screen name="POGeneralPDF" component={POPdfPage} />
           </Stack.Navigator>
         );
       case ROLES.VIEW_ONLY:

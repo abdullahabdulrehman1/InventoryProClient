@@ -115,7 +115,7 @@ const GRNGeneralEdit = ({ navigation, route }) => {
     ).toISOString();
     try {
       const response = await axios.put(`${ServerUrl}/grnGeneral/update-grn`, {
-        token,
+        
         userId,
         id: grn._id,
         grnNumber,
@@ -127,6 +127,10 @@ const GRNGeneralEdit = ({ navigation, route }) => {
         inwardDate: isoInwardDate,
         remarks,
         rows: items,
+      },{
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       console.log(response.data.message);
       if (response.status === 200) {

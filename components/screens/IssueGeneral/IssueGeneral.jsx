@@ -16,7 +16,7 @@ import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-
+import * as SecureStore from 'expo-secure-store';
 const IssueGeneral = ({ navigation }) => {
   const [grnNumber, setGrnNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -92,8 +92,8 @@ const IssueGeneral = ({ navigation }) => {
     }
 
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
     const items = rows;
     const [issueDay, issueMonth, issueYear] = issueDate.split("-");
@@ -115,7 +115,12 @@ const IssueGeneral = ({ navigation }) => {
         driver,
         remarks,
         rows: items,
-      });
+      },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
       console.log(response.data);
       if (response.status === 201) {
         setSuccessModalVisible(true);

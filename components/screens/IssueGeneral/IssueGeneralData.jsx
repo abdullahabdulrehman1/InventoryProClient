@@ -16,7 +16,7 @@ import ServerUrl from "../../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
-
+import * as SecureStore from "expo-secure-store";
 const IssueGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -29,7 +29,7 @@ const IssueGeneralData = ({ navigation }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
         `${ServerUrl}/issueGeneral/get-issue-general`,

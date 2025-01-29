@@ -1,4 +1,3 @@
-// Validation.js
 export const validateForm = (formData, validationRules) => {
   const errors = {};
 

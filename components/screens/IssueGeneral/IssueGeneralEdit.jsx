@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import { CommonActions } from "@react-navigation/native";
-
+import * as SecureStore from 'expo-secure-store'
 const IssueGeneralEdit = ({ navigation, route }) => {
   const { issue } = route.params; // Assuming issue data is passed via route params
 
@@ -80,8 +80,8 @@ const IssueGeneralEdit = ({ navigation, route }) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
     const [day, month, year] = issueDate.split("-");
     const isoDate = new Date(`${year}-${month}-${day}`).toISOString();
@@ -105,6 +105,10 @@ const IssueGeneralEdit = ({ navigation, route }) => {
           driver,
           remarks,
           rows,
+        },  {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       console.log(response.data);

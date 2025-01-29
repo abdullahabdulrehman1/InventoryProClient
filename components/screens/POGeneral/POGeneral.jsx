@@ -385,85 +385,103 @@ const POGeneral = ({ navigation }) => {
             placeholder="Enter Remarks"
           />
         </View>
-        {rows.map((row, index) => (
+              {rows.map((row, index) => (
           <View key={index} style={styles.row}>
             <Text style={styles.rowLabel}>Row {index + 1}</Text>
-            <TextInput
-              style={styles.rowInput}
-              placeholder="PR No"
-              value={row.prNo}
-              onChangeText={(text) => handleInputChange(index, "prNo", text)}
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Department"
-              value={row.department}
-              onChangeText={(text) =>
-                handleInputChange(index, "department", text)
-              }
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Category"
-              value={row.category}
-              onChangeText={(text) =>
-                handleInputChange(index, "category", text)
-              }
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Item Name"
-              value={row.name}
-              onChangeText={(text) => handleInputChange(index, "name", text)}
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="UOM"
-              value={row.uom}
-              onChangeText={(text) => handleInputChange(index, "uom", text)}
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Quantity"
-              value={String(row.quantity)}
-              onChangeText={(text) =>
-                handleInputChange(index, "quantity", text)
-              }
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Rate"
-              value={String(row.rate)}
-              onChangeText={(text) => handleInputChange(index, "rate", text)}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Discount Amount"
-              value={String(row.discountAmount)}
-              onChangeText={(text) =>
-                handleInputChange(index, "discountAmount", text)
-              }
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Other Charges Amount"
-              value={String(row.otherChargesAmount)}
-              onChangeText={(text) =>
-                handleInputChange(index, "otherChargesAmount", text)
-              }
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={styles.rowInput}
-              placeholder="Remarks"
-              value={row.rowRemarks}
-              onChangeText={(text) =>
-                handleInputChange(index, "rowRemarks", text)
-              }
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>PR No:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="PR No"
+                value={row.prNo}
+                onChangeText={(text) => handleInputChange(index, "prNo", text)}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Department:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Department"
+                value={row.department}
+                onChangeText={(text) => handleInputChange(index, "department", text)}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Category:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Category"
+                value={row.category}
+                onChangeText={(text) => handleInputChange(index, "category", text)}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Item Name:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Item Name"
+                value={row.name}
+                onChangeText={(text) => handleInputChange(index, "name", text)}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>UOM:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="UOM"
+                value={row.uom}
+                onChangeText={(text) => handleInputChange(index, "uom", text)}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Quantity:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Quantity"
+                value={String(row.quantity)}
+                onChangeText={(text) => handleInputChange(index, "quantity", text)}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Rate:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Rate"
+                value={String(row.rate)}
+                onChangeText={(text) => handleInputChange(index, "rate", text)}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Discount Amount:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Discount Amount"
+                value={String(row.discountAmount)}
+                onChangeText={(text) => handleInputChange(index, "discountAmount", text)}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Other Charges Amount:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Other Charges Amount"
+                value={String(row.otherChargesAmount)}
+                onChangeText={(text) => handleInputChange(index, "otherChargesAmount", text)}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Remarks:</Text>
+              <TextInput
+                style={styles.rowInput}
+                placeholder="Remarks"
+                value={row.rowRemarks}
+                onChangeText={(text) => handleInputChange(index, "rowRemarks", text)}
+              />
+            </View>
             {index > 0 && (
               <TouchableOpacity
                 style={styles.removeButton}
@@ -498,6 +516,14 @@ const POGeneral = ({ navigation }) => {
             <Text style={styles.buttonText}>Show PO General Data</Text>
           </TouchableOpacity>
         </View>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.pdfButton]}
+                    onPress={() => navigation.navigate('POGeneralPDF')}
+                  >
+                    <Text style={styles.buttonText}>View Demo PDF</Text>
+                  </TouchableOpacity>
+                </View>
       </ScrollView>
 
       <Modal

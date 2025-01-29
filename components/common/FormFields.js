@@ -3,7 +3,7 @@ import { Picker } from "@react-native-picker/picker";
 import React from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-const FormFields = ({ fields, values, onChange, errors }) => {
+const FormFields = ({ fields, values, onChange, errors, disabledFields = [] }) => {
   return (
     <View>
       {fields.map((field, index) => (
@@ -19,6 +19,7 @@ const FormFields = ({ fields, values, onChange, errors }) => {
               onChangeText={(text) => onChange(field.name, text)}
               placeholder={field.placeholder}
               keyboardType={field.keyboardType || "default"}
+              editable={!disabledFields.includes(field.name)}
             />
           )}
           {field.type === "picker" && (

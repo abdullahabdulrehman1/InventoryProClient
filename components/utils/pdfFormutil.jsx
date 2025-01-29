@@ -89,10 +89,10 @@ const PdfPageUtil = ({
         } else {
           Alert.alert("Error", "Sharing is not available on this device");
         }
-      } 
+      }
     } catch (error) {
       console.error("Error fetching PDF:", error);
-      Alert.alert("Error",error.data.message || "An unexpected error occurred");
+      Alert.alert("Error", error.data.message || "An unexpected error occurred");
     }
   };
 
