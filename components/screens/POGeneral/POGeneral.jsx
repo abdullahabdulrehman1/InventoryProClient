@@ -521,7 +521,7 @@ const POGeneral = ({ navigation }) => {
                     style={[styles.button, styles.pdfButton]}
                     onPress={() => navigation.navigate('POGeneralPDF')}
                   >
-                    <Text style={styles.buttonText}>View Demo PDF</Text>
+                    <Text style={styles.buttonText}>Generate PDF Report</Text>
                   </TouchableOpacity>
                 </View>
       </ScrollView>

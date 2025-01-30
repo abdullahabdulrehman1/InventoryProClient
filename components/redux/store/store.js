@@ -4,6 +4,7 @@ import api from "../api/api";
 import pdfSlice from "../reducers/misc";
 import { poGeneralApi } from "../api/poGeneralApi";
 import { setupListeners } from '@reduxjs/toolkit/query';
+import { grnApi } from "../api/grnApi";
 
 
 export const store = configureStore({
@@ -12,11 +13,13 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     [pdfSlice.reducerPath]: pdfSlice.reducer,
     [poGeneralApi.reducerPath]: poGeneralApi.reducer,
+    [grnApi.reducerPath]: grnApi.reducer,
   },
   middleware: (getDefaultMiddleware) => [
     ...getDefaultMiddleware(),
     api.middleware,
     poGeneralApi.middleware,
+    grnApi.middleware
   ],
 });
 

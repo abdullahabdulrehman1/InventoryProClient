@@ -15,8 +15,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import * as SecureStore from "expo-secure-store";
+import ReusableModal from "../../utils/ReusableModal";
+import ReusableButton from "../../utils/reusableButton";
+import FormRows from "../../common/FormRows";
 const GRNGeneral = ({ navigation }) => {
   const [grnNumber, setGrnNumber] = useState("");
   const [date, setDate] = useState("");
@@ -44,7 +46,18 @@ const GRNGeneral = ({ navigation }) => {
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessages, setErrorMessages] = useState([]);
-
+  const rowFields = [
+    { name: "poNo", label: "PO Number", placeholder: "PO Number" },
+    { name: "department", label: "Department", placeholder: "Department" },
+    { name: "category", label: "Category", placeholder: "Category" },
+    { name: "name", label: "Item Name", placeholder: "Item Name" },
+    { name: "unit", label: "Unit", placeholder: "Unit" },
+    { name: "poQty", label: "PO Quantity", placeholder: "PO Quantity", type: "number" },
+    { name: "previousQty", label: "Previous Quantity", placeholder: "Previous Quantity", type: "number" },
+    { name: "balancePoQty", label: "Balance PO Quantity", placeholder: "Balance PO Quantity", type: "number" },
+    { name: "receivedQty", label: "Received Quantity", placeholder: "Received Quantity", type: "number" },
+    { name: "rowRemarks", label: "Row Remarks", placeholder: "Row Remarks" },
+  ];
   const addRow = () => {
     setRows([
       ...rows,
@@ -81,8 +94,8 @@ const GRNGeneral = ({ navigation }) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
 
     try {
@@ -98,6 +111,10 @@ const GRNGeneral = ({ navigation }) => {
         inwardDate,
         remarks,
         rows,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
       if (response.status === 201) {
         setSuccessModalVisible(true);
@@ -224,197 +241,55 @@ const GRNGeneral = ({ navigation }) => {
             onChangeText={setRemarks}
           />
         </View>
-        {rows.map((row, index) => (
-          <View key={index} style={styles.row}>
-            <Text style={styles.rowLabel}>Row {index + 1}</Text>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Number</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="PO Number"
-                value={row.poNo}
-                onChangeText={(text) => handleInputChange(index, "poNo", text)}
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Department</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Department"
-                value={row.department}
-                onChangeText={(text) =>
-                  handleInputChange(index, "department", text)
-                }
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Category</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Category"
-                value={row.category}
-                onChangeText={(text) =>
-                  handleInputChange(index, "category", text)
-                }
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Item Name</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Item Name"
-                value={row.name}
-                onChangeText={(text) => handleInputChange(index, "name", text)}
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Unit</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Unit"
-                value={row.unit}
-                onChangeText={(text) => handleInputChange(index, "unit", text)}
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>PO Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="PO Quantity"
-                value={row.poQty}
-                onChangeText={(text) => handleInputChange(index, "poQty", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Previous Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Previous Quantity"
-                value={row.previousQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "previousQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Balance PO Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Balance PO Quantity"
-                value={row.balancePoQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "balancePoQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Received Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Received Quantity"
-                value={row.receivedQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "receivedQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Row Remarks</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Row Remarks"
-                value={row.rowRemarks}
-                onChangeText={(text) =>
-                  handleInputChange(index, "rowRemarks", text)
-                }
-              />
-            </View>
-            {index > 0 && (
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeRow(index)}
-              >
-                <Ionicons name="remove-circle" size={24} color="red" />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
+        <FormRows
+        rows={rows}
+        rowFields={rowFields}
+        handleRowInputChange={handleInputChange}
+        removeRow={removeRow}
+        errors={{}}
+        isSubmitted={false}
+      />
         <View style={styles.buttonContainer}>
           <Button title="Add Row" onPress={addRow} color="#1b1f26" />
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Submit</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("GRNGeneralData")}
-          >
-            <Text style={styles.buttonText}>Show GRN General Data</Text>
-          </TouchableOpacity>
-        </View>
+        <ReusableButton
+          onPress={handleSubmit}
+          loading={loading}
+          text="Submit"
+        />
+        <ReusableButton
+          onPress={() => navigation.navigate("GRNGeneralData")}
+          text="Show GRN General Data"
+        />
+        <ReusableButton
+          onPress={() => navigation.navigate('GRNPdfPage')}
+          text="Generate PDF Report"
+        />
+       
       </ScrollView>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
+    
+      <ReusableModal
         visible={successModalVisible}
-        onRequestClose={() => setSuccessModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Success</Text>
-            <Text style={styles.modalText}>GRN created successfully.</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.navigate("GRNGeneralData");
-              }}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
+        onClose={() => setSuccessModalVisible(false)}
+        headerText="Success"
+        bodyText="GRN created successfully."
+        buttonText="OK"
+        onButtonPress={() => {
+          setSuccessModalVisible(false);
+          navigation.navigate("GRNGeneralData");
+        }}
+      />
+      
+          <ReusableModal
         visible={errorModalVisible}
-        onRequestClose={() => setErrorModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Error</Text>
-            {errorMessages.map((message, index) => (
-              <Text key={index} style={styles.modalText}>
-                {message}
-              </Text>
-            ))}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setErrorModalVisible(false)}
+        headerText="Error"
+        bodyText={errorMessages.length > 0 ? errorMessages[0] : ""}
+        buttonText="OK"
+        onButtonPress={() => setErrorModalVisible(false)}
+      />
+  
     </View>
   );
 };

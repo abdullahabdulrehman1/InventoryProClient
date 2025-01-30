@@ -4,6 +4,7 @@ import GRNGeneralData from "../screens/GRNGeneral/GRNGeneralData";
 import GRNGeneralEdit from "../screens/GRNGeneral/GRNGeneralEdit";
 import { useSelector } from "react-redux";
 import { ROLES } from "../auth/role";
+import GRNPdfPage from "../screens/GRNGeneral/GRNPdfPage";
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ function GRNGeneralNavigator() {
             <Stack.Screen name="GRNGeneral" component={GRNGeneral} />
             <Stack.Screen name="GRNGeneralData" component={GRNGeneralData} />
             <Stack.Screen name="GRNGeneralEdit" component={GRNGeneralEdit} />
+            <Stack.Screen name="GRNPdfPage" component={GRNPdfPage} />
           </Stack.Navigator>
         );
       case ROLES.NORMAL:
@@ -32,6 +34,7 @@ function GRNGeneralNavigator() {
             <Stack.Screen name="GRNGeneral" component={GRNGeneral} />
             <Stack.Screen name="GRNGeneralData" component={GRNGeneralData} />
             <Stack.Screen name="GRNGeneralEdit" component={GRNGeneralEdit} />
+            <Stack.Screen name="GRNPdfPage" component={GRNPdfPage} />
           </Stack.Navigator>
         );
       case ROLES.VIEW_ONLY:

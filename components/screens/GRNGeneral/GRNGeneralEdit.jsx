@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import { CommonActions } from "@react-navigation/native";
-
+import * as SecureStore from 'expo-secure-store';
 const GRNGeneralEdit = ({ navigation, route }) => {
   const { grn } = route.params; // Assuming GRN data is passed via route params
 
@@ -87,7 +87,33 @@ const GRNGeneralEdit = ({ navigation, route }) => {
     return regex.test(date);
   };
 
-  const handleSubmit = async () => {
+   const handleSubmit = async () => {
+    // Validate required fields
+    if (
+      !grnNumber ||
+      !date ||
+      !supplierChallanNumber ||
+      !supplierChallanDate ||
+      !supplier ||
+      !inwardNumber ||
+      !inwardDate ||
+      rows.some(row => 
+        !row.poNo ||
+        !row.department ||
+        !row.category ||
+        !row.name ||
+        !row.unit ||
+        !row.poQty ||
+        !row.previousQty ||
+        !row.balancePoQty ||
+        !row.receivedQty
+      )
+    ) {
+      Alert.alert("Error", "Please fill in all required fields.");
+      return;
+    }
+  
+    // Validate date format
     if (
       !validateDate(date) ||
       !validateDate(supplierChallanDate) ||
@@ -96,10 +122,10 @@ const GRNGeneralEdit = ({ navigation, route }) => {
       Alert.alert("Error", "Please enter dates in the format dd-mm-yyyy.");
       return;
     }
-
+  
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    const user = await AsyncStorage.getItem("user");
+    const token = await SecureStore.getItemAsync("token");
+    const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
     const items = rows;
     const [day, month, year] = date.split("-");
@@ -115,7 +141,6 @@ const GRNGeneralEdit = ({ navigation, route }) => {
     ).toISOString();
     try {
       const response = await axios.put(`${ServerUrl}/grnGeneral/update-grn`, {
-        
         userId,
         id: grn._id,
         grnNumber,
@@ -164,7 +189,7 @@ const GRNGeneralEdit = ({ navigation, route }) => {
       })
     );
   };
-
+ 
   return (
     <View>
       <ScrollView
