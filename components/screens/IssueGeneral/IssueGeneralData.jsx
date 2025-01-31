@@ -34,7 +34,10 @@ const IssueGeneralData = ({ navigation }) => {
       const response = await axios.get(
         `${ServerUrl}/issueGeneral/get-issue-general`,
         {
-          params: { token },
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       setData(response.data);
@@ -59,9 +62,12 @@ const IssueGeneralData = ({ navigation }) => {
 
   const handleDelete = async (issueId) => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await SecureStore.getItemAsync("token");
       await axios.delete(`${ServerUrl}/issueGeneral/delete-issue-general`, {
-        data: { token, id: issueId },
+        data: { id: issueId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       Alert.alert("Success", "Issue deleted successfully.");
       fetchData();
