@@ -16,6 +16,7 @@ import {
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
+import * as SecureStore from 'expo-secure-store';
 
 const GRNReturnGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
@@ -29,12 +30,15 @@ const GRNReturnGeneralData = ({ navigation }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
         `${ServerUrl}/grnReturnGeneral/get-grn-returns`,
         {
-          params: { token },
+         
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       setData(response.data);
@@ -59,13 +63,16 @@ const GRNReturnGeneralData = ({ navigation }) => {
   }, []);
 
   const handleDelete = async () => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       await axios.delete(
         `${ServerUrl}/grnReturnGeneral/delete-grn-return-general`,
         {
-          params: { token },
+        
           data: { id: deleteId },
+          headers:{
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 

@@ -4,6 +4,7 @@ import GRNReturnGeneralData from "../screens/GRNReturnGeneral/GRNReturnGeneralDa
 import GRNReturnGeneralEdit from "../screens/GRNReturnGeneral/GRNReturnGeneralEdit";
 import { useSelector } from "react-redux";
 import { ROLES } from "../auth/role";
+import GRNReturnGeneralPDF from "../screens/GRNReturnGeneral/GRNReturnGeneralPDF";
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ function GRNReturnGeneralNavigator() {
             <Stack.Screen name="GRNReturnGeneral" component={GRNReturnGeneral} />
             <Stack.Screen name="GRNReturnGeneralData" component={GRNReturnGeneralData} />
             <Stack.Screen name="GRNReturnGeneralEdit" component={GRNReturnGeneralEdit} />
+            <Stack.Screen name="GRNReturnGeneralPDF" component={GRNReturnGeneralPDF} />
           </Stack.Navigator>
         );
       case ROLES.NORMAL:
@@ -32,6 +34,8 @@ function GRNReturnGeneralNavigator() {
             <Stack.Screen name="GRNReturnGeneral" component={GRNReturnGeneral} />
             <Stack.Screen name="GRNReturnGeneralData" component={GRNReturnGeneralData} />
             <Stack.Screen name="GRNReturnGeneralEdit" component={GRNReturnGeneralEdit} />
+            <Stack.Screen name="GRNReturnGeneralPDF" component={GRNReturnGeneralPDF} />
+
           </Stack.Navigator>
         );
       case ROLES.VIEW_ONLY:

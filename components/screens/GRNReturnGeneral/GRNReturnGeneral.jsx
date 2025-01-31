@@ -1,28 +1,27 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
-  TextInput,
-  Button,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
-  ActivityIndicator,
-  Modal,
+  StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import FormRows from "../../common/FormRows";
+import FormFields from "../../common/FormFields";
+import { validateForm, validationMethods } from "../../utils/formValidation";
 import * as SecureStore from "expo-secure-store";
+import ReusableButton from "../../utils/reusableButton";
+import ReusableModal from "../../utils/ReusableModal";
 
 const GRNReturnGeneral = ({ navigation }) => {
-  const [grnrNumber, setGrnrNumber] = useState("");
-  const [grnrDate, setGrnrDate] = useState("");
-  const [grnNumber, setGrnNumber] = useState("");
-  const [grnDate, setGrnDate] = useState("");
-  const [remarks, setRemarks] = useState("");
+  const [formValues, setFormValues] = useState({
+    grnrNumber: "",
+    grnrDate: "",
+    grnNumber: "",
+    grnDate: "",
+    remarks: "",
+  });
   const [rows, setRows] = useState([
     {
       action: "",
@@ -37,10 +36,30 @@ const GRNReturnGeneral = ({ navigation }) => {
       rowRemarks: "",
     },
   ]);
+  const [errors, setErrors] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorMessages, setErrorMessages] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const formFields = [
+    { name: "grnrNumber", label: "GRNR Number", icon: "document-text-outline", type: "text" },
+    { name: "grnrDate", label: "GRNR Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "grnNumber", label: "GRN Number", icon: "document-text-outline", type: "text" },
+    { name: "grnDate", label: "GRN Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "remarks", label: "Remarks", icon: "chatbox-ellipses-outline", type: "text" },
+  ];
+
+  const handleInputChange = (name, value) => {
+    setFormValues({ ...formValues, [name]: value });
+  };
+
+  const handleRowInputChange = (index, name, value) => {
+    const newRows = [...rows];
+    newRows[index][name] = value;
+    setRows(newRows);
+  };
 
   const addRow = () => {
     setRows([
@@ -62,415 +81,161 @@ const GRNReturnGeneral = ({ navigation }) => {
 
   const removeRow = (index) => {
     if (rows.length > 1) {
-      const values = [...rows];
-      values.splice(index, 1);
-      setRows(values);
+      const newRows = rows.filter((_, i) => i !== index);
+      setRows(newRows);
     } else {
       Alert.alert("Error", "At least one row is required.");
     }
   };
 
-  const handleInputChange = (index, name, value) => {
-    const values = [...rows];
-    values[index][name] = value;
-    setRows(values);
-  };
-
   const handleSubmit = async () => {
-    setLoading(true);
-    const token = await SecureStore.getItemAsync("token");
+    setIsSubmitted(true);
+    const validationRules = [
+      {
+        field: "grnrNumber",
+        validations: [{ method: validationMethods.required, message: "GRNR Number is required" }],
+      },
+      {
+        field: "grnrDate",
+        validations: [{ method: validationMethods.required, message: "GRNR Date is required" }, { method: validationMethods.validateDate, message: "GRNR Date must be in dd-mm-yyyy format" }],
+      },
+      {
+        field: "grnNumber",
+        validations: [{ method: validationMethods.required, message: "GRN Number is required" }],
+      },
+      {
+        field: "grnDate",
+        validations: [{ method: validationMethods.required, message: "GRN Date is required" }, { method: validationMethods.validateDate, message: "GRN Date must be in dd-mm-yyyy format" }],
+      },
+      {
+        field: "remarks",
+        validations: [{ method: validationMethods.required, message: "Remarks are required" }],
+      },
+      {
+        field: "rows",
+        validations: {
+          action: [{ method: validationMethods.required, message: "Action is required" }],
+          serialNo: [{ method: validationMethods.required, message: "Serial No is required" }],
+          category: [{ method: validationMethods.required, message: "Category is required" }],
+          name: [{ method: validationMethods.required, message: "Name is required" }],
+          unit: [{ method: validationMethods.required, message: "Unit is required" }],
+          grnQty: [{ method: validationMethods.required, message: "GRN Qty is required" }, { method: validationMethods.isNumber, message: "GRN Qty must be a number" }],
+          previousReturnQty: [{ method: validationMethods.required, message: "Previous Return Qty is required" }, { method: validationMethods.isNumber, message: "Previous Return Qty must be a number" }],
+          balanceGrnQty: [{ method: validationMethods.required, message: "Balance GRN Qty is required" }, { method: validationMethods.isNumber, message: "Balance GRN Qty must be a number" }],
+          returnQty: [{ method: validationMethods.required, message: "Return Qty is required" }, { method: validationMethods.isNumber, message: "Return Qty must be a number" }],
+          rowRemarks: [{ method: validationMethods.maxLength, args: [150], message: "Row Remarks must be less than 150 characters" }],
+        },
+      },
+    ];
 
-    try {
-      const response = await axios.post(
-        `${ServerUrl}/grnReturnGeneral/create-return-grn`,
-        {
-          
-          grnrNumber,
-          grnrDate,
-          grnNumber,
-          grnDate,
-          remarks,
-          rows,
-        },{
+    const formData = {
+      ...formValues,
+      rows,
+    };
+    const validationErrors = validateForm(formData, validationRules);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      setLoading(true);
+      try {
+        const token = await SecureStore.getItemAsync("token");
+        const user = await SecureStore.getItemAsync("user");
+        const userId = JSON.parse(user)._id;
+        const response = await axios.post(
+          `${ServerUrl}/grnReturnGeneral/create-return-grn`,
+          {
+            userId,
+            ...formValues,
+            rows,
+          }, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
-      );
-      console.log(response.data);
-      if (response.status === 201) {
-        setSuccessModalVisible(true);
-      } else {
-        setErrorMessages([response.data.message || "Something went wrong."]);
+        );
+        if (response.status === 201) {
+          setSuccessModalVisible(true);
+        } else {
+          setErrorMessage(response.data.message || "Something went wrong.");
+          setErrorModalVisible(true);
+        }
+      } catch (error) {
+        console.error(error);
+        if (error.response && error.response.data && error.response.data.message) {
+          setErrorMessage(error.response.data.message);
+        } else {
+          setErrorMessage(`Something went wrong. ${error.message}`);
+        }
         setErrorModalVisible(true);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error response:", error.response);
-      if (error.response) {
-        setErrorMessages([
-          error.response.data.message || "Something went wrong.",
-        ]);
-      } else if (error.request) {
-        setErrorMessages(["No response received from server."]);
-      } else {
-        setErrorMessages([error.message || "Something went wrong."]);
-      }
+    } else {
+      const firstError = Object.values(validationErrors)[0];
+      setErrorMessage(firstError);
       setErrorModalVisible(true);
-    } finally {
-      setLoading(false);
     }
   };
 
+  const handleSuccessModalClose = () => {
+    setSuccessModalVisible(false);
+    navigation.navigate("GRNReturnGeneralData");
+  };
+
   return (
-    <View>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>GRNR Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={grnrNumber}
-            onChangeText={setGrnrNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>GRNR Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={grnrDate}
-            onChangeText={setGrnrDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>GRN Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={grnNumber}
-            onChangeText={setGrnNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>GRN Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={grnDate}
-            onChangeText={setGrnDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="chatbox-ellipses-outline" size={20} color="black" />
-            <Text style={styles.label}>Remarks</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={remarks}
-            onChangeText={setRemarks}
-          />
-        </View>
-        {rows.map((row, index) => (
-          <View key={index} style={styles.row}>
-            <Text style={styles.rowLabel}>Row {index + 1}</Text>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Action</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Action"
-                value={row.action}
-                onChangeText={(text) =>
-                  handleInputChange(index, "action", text)
-                }
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>S.No</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="S.No"
-                value={row.serialNo}
-                onChangeText={(text) =>
-                  handleInputChange(index, "serialNo", text)
-                }
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Level 3 Item Category</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Category"
-                value={row.category}
-                onChangeText={(text) =>
-                  handleInputChange(index, "category", text)
-                }
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Item Name</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Item Name"
-                value={row.name}
-                onChangeText={(text) => handleInputChange(index, "name", text)}
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Unit</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Unit"
-                value={row.unit}
-                onChangeText={(text) => handleInputChange(index, "unit", text)}
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>GRN Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="GRN Quantity"
-                value={row.grnQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "grnQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Previous Return Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Previous Return Quantity"
-                value={row.previousReturnQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "previousReturnQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Balance GRN Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Balance GRN Quantity"
-                value={row.balanceGrnQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "balanceGrnQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Return Quantity</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Return Quantity"
-                value={row.returnQty}
-                onChangeText={(text) =>
-                  handleInputChange(index, "returnQty", text)
-                }
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.rowLabel}>Row Remarks</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Row Remarks"
-                value={row.rowRemarks}
-                onChangeText={(text) =>
-                  handleInputChange(index, "rowRemarks", text)
-                }
-              />
-            </View>
-            {index > 0 && (
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeRow(index)}
-              >
-                <Ionicons name="remove-circle" size={24} color="red" />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-        <View style={styles.buttonContainer}>
-          <Button title="Add Row" onPress={addRow} color="#1b1f26" />
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Submit</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("GRNReturnGeneralData")}
-          >
-            <Text style={styles.buttonText}>Show GRN Return General Data</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
+    <ScrollView contentContainerStyle={styles.container}>
+      <FormFields
+        fields={formFields}
+        values={formValues}
+        onChange={handleInputChange}
+        errors={errors}
+      />
+      <FormRows
+        rows={rows}
+        rowFields={[
+          { name: "action", label: "Action", placeholder: "Action" },
+          { name: "serialNo", label: "Serial No", placeholder: "Serial No" },
+          { name: "category", label: "Category", placeholder: "Category" },
+          { name: "name", label: "Name", placeholder: "Name" },
+          { name: "unit", label: "Unit", placeholder: "Unit" },
+          { name: "grnQty", label: "GRN Qty", placeholder: "GRN Qty", type: "number" },
+          { name: "previousReturnQty", label: "Previous Return Qty", placeholder: "Previous Return Qty", type: "number" },
+          { name: "balanceGrnQty", label: "Balance GRN Qty", placeholder: "Balance GRN Qty", type: "number" },
+          { name: "returnQty", label: "Return Qty", placeholder: "Return Qty", type: "number" },
+          { name: "rowRemarks", label: "Row Remarks", placeholder: "Row Remarks" },
+        ]}
+        handleRowInputChange={handleRowInputChange}
+        removeRow={removeRow}
+        errors={errors}
+        isSubmitted={isSubmitted}
+      />
+      <ReusableButton onPress={addRow} text="Add Row" />
+      <ReusableButton onPress={handleSubmit} loading={loading} text="Submit" />
+      <ReusableButton onPress={() => navigation.navigate("GRNReturnGeneralData")} text="Show GRN Return General Data" />
+      <ReusableButton onPress={() => navigation.navigate("GRNReturnGeneralPDF")} text="Generate PDF Report" />
+      <ReusableModal
         visible={successModalVisible}
-        onRequestClose={() => setSuccessModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Success</Text>
-            <Text style={styles.modalText}>
-              GRN Return created successfully.
-            </Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.navigate("GRNReturnGeneralData");
-              }}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
+        onClose={handleSuccessModalClose}
+        headerText="Success"
+        bodyText="GRN Return created successfully."
+        buttonText="OK"
+        onButtonPress={handleSuccessModalClose}
+      />
+      <ReusableModal
         visible={errorModalVisible}
-        onRequestClose={() => setErrorModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Error</Text>
-            {errorMessages.map((message, index) => (
-              <Text key={index} style={styles.modalText}>
-                {message}
-              </Text>
-            ))}
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </View>
+        onClose={() => setErrorModalVisible(false)}
+        headerText="Error"
+        bodyText={errorMessage}
+        buttonText="OK"
+        onButtonPress={() => setErrorModalVisible(false)}
+      />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  buttonContainer: {
-    borderRadius: 20,
-    overflow: "hidden",
-    marginTop: 20,
-    width: "100%",
-  },
-  formGroup: {
-    marginBottom: 15,
-  },
-  labelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  label: {
-    marginLeft: 5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 20,
-    marginTop: 5,
-  },
-  row: {
-    marginBottom: 15,
-    position: "relative",
-  },
-  rowLabel: {
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  rowInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 20,
-    marginBottom: 5,
-  },
-  removeButton: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-  },
-  button: {
-    backgroundColor: "#1b1f26",
-    padding: 15,
-    width: "100%",
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
   },
 });
 
