@@ -4,6 +4,7 @@ import { ROLES } from "../auth/role";
 import IssueReturnGeneral from "../screens/IssueReturnGeneral/IssueReturnGeneral";
 import IssueReturnGeneralData from "../screens/IssueReturnGeneral/IssueReturnGeneralData";
 import IssueReturnGeneralEdit from "../screens/IssueReturnGeneral/IssueReturnGeneralEdit";
+import IssueReturnPdfPage from "../screens/IssueReturnGeneral/issueReturnPdfPage";
 
 const Stack = createStackNavigator();
 
@@ -21,6 +22,7 @@ function IssueReturnGeneralNavigator() {
             <Stack.Screen name="IssueReturnGeneral" component={IssueReturnGeneral} />
             <Stack.Screen name="IssueReturnGeneralData" component={IssueReturnGeneralData} />
             <Stack.Screen name="IssueReturnGeneralEdit" component={IssueReturnGeneralEdit} />
+            <Stack.Screen name="IssueReturnGeneralPDF" component={IssueReturnPdfPage} />
           </Stack.Navigator>
         );
       case ROLES.NORMAL:
@@ -32,6 +34,8 @@ function IssueReturnGeneralNavigator() {
             <Stack.Screen name="IssueReturnGeneral" component={IssueReturnGeneral} />
             <Stack.Screen name="IssueReturnGeneralData" component={IssueReturnGeneralData} />
             <Stack.Screen name="IssueReturnGeneralEdit" component={IssueReturnGeneralEdit} />
+            <Stack.Screen name="IssueReturnGeneralPDF" component={IssueReturnPdfPage} />
+
           </Stack.Navigator>
         );
       case ROLES.VIEW_ONLY:

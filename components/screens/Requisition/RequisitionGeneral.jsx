@@ -205,10 +205,10 @@ const RequisitionGeneral = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  ...ContainerStyles,
-  ...ButtonStyles,
-  ...FormStyles,
-  ...ModalStyles,
+    ...ContainerStyles,
+    ...ButtonStyles,
+    ...FormStyles,
+    ...ModalStyles,
   header: {
     fontSize: 24,
     fontWeight: "bold",

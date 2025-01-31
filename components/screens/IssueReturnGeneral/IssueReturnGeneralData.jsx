@@ -16,7 +16,7 @@ import {
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
-
+import * as SecureStore from "expo-secure-store";
 const IssueReturnGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -30,12 +30,15 @@ const IssueReturnGeneralData = ({ navigation }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
         `${ServerUrl}/issueReturnGeneral/get-issue-return-general`,
         {
-          params: { token },
+         
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       console.log("Fetched data:", response.data); // Debugging log
@@ -61,11 +64,15 @@ const IssueReturnGeneralData = ({ navigation }) => {
 
   const handleDelete = async (issueReturnId) => {
     try {
-      const token = await AsyncStorage.getItem("token");
+      const token = await SecureStore.getItemAsync("token");
       await axios.delete(
         `${ServerUrl}/issueReturnGeneral/delete-issue-return-general`,
         {
-          data: { token, id: issueReturnId },
+          data: {  id: issueReturnId },
+          
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       Alert.alert("Success", "Issue Return deleted successfully.");

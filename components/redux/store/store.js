@@ -6,6 +6,7 @@ import { poGeneralApi } from "../api/poGeneralApi";
 import { setupListeners } from '@reduxjs/toolkit/query';
 import { grnApi } from "../api/grnApi";
 import { issueGeneralApi } from "../api/issueApi";
+import { issueReturnApi } from "../api/issueReturnApi";
 
 
 export const store = configureStore({
@@ -16,13 +17,15 @@ export const store = configureStore({
     [poGeneralApi.reducerPath]: poGeneralApi.reducer,
     [grnApi.reducerPath]: grnApi.reducer,
     [issueGeneralApi.reducerPath]: issueGeneralApi.reducer,
+    [issueReturnApi.reducerPath]: issueReturnApi.reducer,
   },
   middleware: (getDefaultMiddleware) => [
     ...getDefaultMiddleware(),
     api.middleware,
     poGeneralApi.middleware,
     issueGeneralApi.middleware,
-    grnApi.middleware
+    grnApi.middleware,
+    issueReturnApi.middleware
   ],
 });
 

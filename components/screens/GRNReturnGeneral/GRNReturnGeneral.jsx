@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import ServerUrl from "../../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 const GRNReturnGeneral = ({ navigation }) => {
   const [grnrNumber, setGrnrNumber] = useState("");
@@ -77,19 +78,23 @@ const GRNReturnGeneral = ({ navigation }) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
 
     try {
       const response = await axios.post(
         `${ServerUrl}/grnReturnGeneral/create-return-grn`,
         {
-          token,
+          
           grnrNumber,
           grnrDate,
           grnNumber,
           grnDate,
           remarks,
           rows,
+        },{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
       console.log(response.data);
