@@ -49,7 +49,7 @@ export const requisitionFields = [
 export const rowFields = [
   {
     name: "level3ItemCategory",
-    label: "Level 3 Item Category",
+    label: "Item Category",
     placeholder: "Enter Level 3 Item Category",
     type: "text",
     maxLength: 32,

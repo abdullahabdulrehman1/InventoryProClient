@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ServerUrl from "../../config/ServerUrl";
 import { Ionicons } from "@expo/vector-icons";
 import { ROLES } from "../../auth/role";
+import * as SecureStore from "expo-secure-store";
 
 const PendingUsers = ({ navigation }) => {
   const [users, setUsers] = useState([]);
@@ -26,10 +27,15 @@ const PendingUsers = ({ navigation }) => {
   const [roleModalVisible, setRoleModalVisible] = useState(false);
 
   const fetchUsers = async () => {
-    const token = await AsyncStorage.getItem("token");
+  const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
-        `${ServerUrl}/users/pending-users?token=${token}`
+        `${ServerUrl}/users/pending-users`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       const sortedUsers = response.data.users.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -61,13 +67,19 @@ const PendingUsers = ({ navigation }) => {
   };
 
   const handleChangeRole = async (role) => {
-    const token = await AsyncStorage.getItem("token");
+   const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.post(`${ServerUrl}/users/assign-role`, {
-        token,
+        
         role,
         userId: selectedUser._id,
-      });
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
       Alert.alert("Success", response.data.message);
       setUsers(users.filter((user) => user._id !== selectedUser._id));
       setSelectedUser(null);

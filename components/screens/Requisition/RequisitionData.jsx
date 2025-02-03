@@ -229,7 +229,7 @@ const RequisitionData = ({ navigation }) => {
                     <View key={index}>
                       <View style={styles.row}>
                         <Text style={styles.modalText}>
-                          Level 3 Item Category:{" "}
+                          Item Category:{" "}
                           <Text style={styles.boldText}>
                             {row.level3ItemCategory}
                           </Text>

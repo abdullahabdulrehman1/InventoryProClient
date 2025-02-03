@@ -19,7 +19,7 @@ import ServerUrl from "../config/ServerUrl";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { userExist } from "../redux/reducers/auth";
 import { useDispatch } from "react-redux";
-
+import * as SecureStore from "expo-secure-store";
 const CustomAlert = ({ visible, title, message, onClose }) => {
   return (
     <Modal
@@ -116,15 +116,15 @@ const Register = ({ navigation }) => {
 
       if (response.data.success) {
         // Save the token in AsyncStorage
-        await AsyncStorage.setItem("token", response.data.token);
+        await SecureStore.setItemAsync("token", response.data.token);
 
        
 
         // Check user existence
-        const token = await AsyncStorage.getItem("token");
+        const token = await SecureStore.getItemAsync("token");
         
         console.log("Token:", token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        await SecureStore.setItemAsync('user', JSON.stringify(response.data.user));
 
         dispatch(userExist(response.data.user));
       } else {

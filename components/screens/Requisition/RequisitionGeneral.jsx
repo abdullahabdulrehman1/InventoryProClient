@@ -184,7 +184,7 @@ const RequisitionGeneral = ({ navigation }) => {
             style={[styles.button, styles.pdfButton]}
             onPress={() => navigation.navigate('RequisitionPDF')}
           >
-            <Text style={styles.buttonText}>View Demo PDF</Text>
+            <Text style={styles.buttonText}>Generate PDF Report</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

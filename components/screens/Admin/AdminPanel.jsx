@@ -17,6 +17,7 @@ import ServerUrl from "../../config/ServerUrl";
 import { ROLES } from "../../auth/role";
 import { useSelector } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store"; 
 
 const AdminPanel = ({ navigation }) => {
   const [users, setUsers] = useState([]);
@@ -28,10 +29,14 @@ const AdminPanel = ({ navigation }) => {
   const AdminUser = useSelector((state) => state?.auth?.user);
 
   const fetchUsers = async () => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
-        `${ServerUrl}/users/get-users?token=${token}`
+        `${ServerUrl}/users/get-users`,{
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
       );
       const sortedUsers = response.data.users.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -74,13 +79,19 @@ const AdminPanel = ({ navigation }) => {
   };
 
   const handleChangeRole = async (role) => {
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.post(`${ServerUrl}/users/assign-role`, {
-        token,
+        
         role,
         userId: selectedUser._id,
-      });
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      }
+    );
       Alert.alert("Success", response.data.message);
       setSelectedUser({ ...selectedUser, role });
     } catch (error) {
@@ -99,16 +110,16 @@ const AdminPanel = ({ navigation }) => {
 
   const deleteUser = async () => {
     const userId = selectedUser._id;
-    const token = await AsyncStorage.getItem("token");
+    const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.delete(`${ServerUrl}/users/delete-users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         data: {
-          token,
+          
           userId: userId,
         },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
       Alert.alert("Success", "User deleted successfully");
       setUsers(users.filter((user) => user._id !== userId));
