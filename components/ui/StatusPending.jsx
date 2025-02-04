@@ -2,15 +2,14 @@ import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { userNotExist } from "../redux/reducers/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import * as SecureStore from "expo-secure-store";
 const StatusPending = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state?.auth?.user);
   const handleLogout = async () => {
     try {
       // Delete the inventoryPro token
-      await AsyncStorage.removeItem("token");
+      await SecureStore.deleteItemAsync("token");
 
       console.log("Sign out successful");
       dispatch(userNotExist());

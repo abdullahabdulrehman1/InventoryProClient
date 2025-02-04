@@ -1,14 +1,13 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   DrawerContentScrollView,
   DrawerItemList,
 } from "@react-navigation/drawer";
 import { useNavigation } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { userNotExist } from "../redux/reducers/auth";
-
 const CustomDrawerContent = (props) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -17,7 +16,7 @@ const CustomDrawerContent = (props) => {
   const handleSignOut = async () => {
     try {
       // Delete the inventoryPro token
-      await AsyncStorage.removeItem("token");
+      await SecureStore.deleteItemAsync("token");
 
       console.log("Sign out successful");
       dispatch(userNotExist());

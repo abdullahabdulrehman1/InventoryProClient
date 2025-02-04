@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -18,7 +18,6 @@ import {
   View,
 } from "react-native";
 import ServerUrl from "../../config/ServerUrl";
-import * as SecureStore from "expo-secure-store";
 
 const POGeneral = ({ navigation }) => {
   const [poNumber, setPoNumber] = useState("");

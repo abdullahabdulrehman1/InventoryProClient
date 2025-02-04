@@ -12,7 +12,6 @@ import {
   RefreshControl,
 } from "react-native";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import ServerUrl from "../../config/ServerUrl";
 import { ROLES } from "../../auth/role";
 import { useSelector } from "react-redux";

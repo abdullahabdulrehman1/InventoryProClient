@@ -1,20 +1,20 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import * as SecureStore from "expo-secure-store";
-import ServerUrl from "../../config/ServerUrl";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import * as SecureStore from 'expo-secure-store'
+import ServerUrl from '../../config/ServerUrl'
 
 export const issueGeneralApi = createApi({
   reducerPath: 'issueGeneralApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${ServerUrl}/`,
-    prepareHeaders: async (headers) => {
-      const token = await SecureStore.getItemAsync("token");
+    prepareHeaders: async headers => {
+      const token = await SecureStore.getItemAsync('token')
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        headers.set('Authorization', `Bearer ${token}`)
       }
-      return headers;
-    },
+      return headers
+    }
   }),
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     generatePdfReport: builder.mutation({
       query: ({ fromDate, toDate, sortBy, order, selectedColumns }) => ({
         url: `issueGeneral/generatePdfReport`,
@@ -24,11 +24,11 @@ export const issueGeneralApi = createApi({
           toDate,
           sortBy,
           order,
-          columns: selectedColumns.join(','),
-        },
-      }),
-    }),
-  }),
-});
+          columns: selectedColumns.join(',')
+        }
+      })
+    })
+  })
+})
 
-export const { useGeneratePdfReportMutation } = issueGeneralApi;
+export const { useGeneratePdfReportMutation } = issueGeneralApi

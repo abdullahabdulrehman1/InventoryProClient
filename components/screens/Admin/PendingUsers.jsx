@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  Modal,
-  Alert,
-  RefreshControl,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import ServerUrl from "../../config/ServerUrl";
 import { Ionicons } from "@expo/vector-icons";
-import { ROLES } from "../../auth/role";
+import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { ROLES } from "../../auth/role";
+import ServerUrl from "../../config/ServerUrl";
 
 const PendingUsers = ({ navigation }) => {
   const [users, setUsers] = useState([]);

@@ -1,25 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  Button,
-  TouchableOpacity,
-  ScrollView,
+  ActivityIndicator,
   Alert,
+  Button,
   Image,
   Modal,
-  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import axios from "axios";
-import ServerUrl from "../config/ServerUrl";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { userExist } from "../redux/reducers/auth";
 import { useDispatch } from "react-redux";
-import * as SecureStore from "expo-secure-store";
+import ServerUrl from "../config/ServerUrl";
+import { userExist } from "../redux/reducers/auth";
 const CustomAlert = ({ visible, title, message, onClose }) => {
   return (
     <Modal
