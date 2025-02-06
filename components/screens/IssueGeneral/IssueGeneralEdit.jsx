@@ -1,14 +1,13 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Text, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-import ServerUrl from "../../config/ServerUrl";
-import FormRows from "../../common/FormRows";
-import FormFields from "../../common/FormFields";
-import { validateForm, validationMethods } from "../../utils/formValidation";
-import ReusableModal from "../../utils/ReusableModal";
 import * as SecureStore from 'expo-secure-store';
+import React, { useState } from "react";
+import { Alert, ScrollView, StyleSheet } from "react-native";
+import FormFields from "../../common/FormFields";
+import FormRows from "../../common/FormRows";
+import ServerUrl from "../../config/ServerUrl";
+import { validateForm, validationMethods } from "../../utils/formValidation";
 import ReusableButton from "../../utils/reusableButton";
+import ReusableModal from "../../utils/ReusableModal";
 
 const IssueGeneralEdit = ({ navigation, route }) => {
   const { issue } = route.params; // Assuming issue data is passed via route params

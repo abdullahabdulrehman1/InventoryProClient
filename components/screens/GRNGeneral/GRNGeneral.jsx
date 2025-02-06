@@ -1,24 +1,20 @@
+import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  View,
+  Alert,
+  Button,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  Button,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
+  View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import axios from "axios";
+import FormRows from "../../common/FormRows";
 import ServerUrl from "../../config/ServerUrl";
-import * as SecureStore from "expo-secure-store";
 import ReusableModal from "../../utils/ReusableModal";
 import ReusableButton from "../../utils/reusableButton";
-import FormRows from "../../common/FormRows";
 const GRNGeneral = ({ navigation }) => {
   const [grnNumber, setGrnNumber] = useState("");
   const [date, setDate] = useState("");

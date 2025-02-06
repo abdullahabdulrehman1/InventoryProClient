@@ -1,16 +1,15 @@
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  View,
-  ScrollView,
   Alert,
-  StyleSheet,
+  ScrollView,
+  StyleSheet
 } from "react-native";
-import axios from "axios";
-import ServerUrl from "../../config/ServerUrl";
-import FormRows from "../../common/FormRows";
 import FormFields from "../../common/FormFields";
+import FormRows from "../../common/FormRows";
+import ServerUrl from "../../config/ServerUrl";
 import { validateForm, validationMethods } from "../../utils/formValidation";
-import * as SecureStore from "expo-secure-store";
 import ReusableButton from "../../utils/reusableButton";
 import ReusableModal from "../../utils/ReusableModal";
 

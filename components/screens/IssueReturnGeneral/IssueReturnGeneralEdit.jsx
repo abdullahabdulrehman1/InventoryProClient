@@ -1,25 +1,20 @@
-import { Ionicons } from "@expo/vector-icons";
 import { CommonActions } from "@react-navigation/native";
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Modal,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import ServerUrl from "../../config/ServerUrl";
-import * as SecureStore from "expo-secure-store";
 import FormFields from "../../common/FormFields";
 import FormRows from "../../common/FormRows";
-import ReusableButton from "../../utils/reusableButton";
-import ReusableModal from "../../utils/ReusableModal";
+import ServerUrl from "../../config/ServerUrl";
 import { validateForm, validationMethods } from "../../utils/formValidation";
 import HeaderBackArrow from "../../utils/headerBackArrow";
+import ReusableButton from "../../utils/reusableButton";
+import ReusableModal from "../../utils/ReusableModal";
 
 const IssueReturnGeneralEdit = ({ navigation, route }) => {
   const { issueReturn } = route.params; // Assuming issueReturn data is passed via route params

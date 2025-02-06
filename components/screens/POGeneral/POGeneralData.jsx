@@ -1,22 +1,20 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-import ServerUrl from "../../config/ServerUrl";
 import { CommonActions } from "@react-navigation/native";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
-import * as SecureStore from "expo-secure-store";
+import ServerUrl from "../../config/ServerUrl";
 const POGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);

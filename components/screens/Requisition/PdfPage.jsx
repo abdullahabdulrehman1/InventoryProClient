@@ -1,17 +1,13 @@
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  View,
   Alert,
-  StyleSheet,
-  Text,
-  SafeAreaView,
   Platform,
   StatusBar,
-  ActivityIndicator,
+  StyleSheet
 } from "react-native";
-import * as SecureStore from "expo-secure-store";
-import PdfPageUtil from "../../utils/pdfFormutil";
 import { useGeneratePdfReportMutation } from "../../redux/api/api";
+import PdfPageUtil from "../../utils/pdfFormutil";
 
 const PdfPage = ({ navigation }) => {
   const [startDate, setStartDate] = useState(null);

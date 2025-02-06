@@ -1,16 +1,15 @@
+import * as FileSystem from "expo-file-system";
+import * as SecureStore from "expo-secure-store";
+import * as Sharing from "expo-sharing";
 import React, { useState } from "react";
 import {
-    View,
     Alert,
-    StyleSheet,
     Platform,
     StatusBar,
+    StyleSheet
 } from "react-native";
-import * as SecureStore from "expo-secure-store";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
-import PdfPageUtil from "../../utils/pdfFormutil";
 import { useGeneratePdfReportMutation } from "../../redux/api/issueApi";
+import PdfPageUtil from "../../utils/pdfFormutil";
 
 const IssueGeneralPdfPage = ({ navigation }) => {
     const [startDate, setStartDate] = useState(null);
