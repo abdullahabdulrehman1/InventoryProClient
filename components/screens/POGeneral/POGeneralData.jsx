@@ -5,9 +5,10 @@ import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
-  ScrollView,
   StyleSheet,
+  ScrollView,
   Text,
   TouchableOpacity,
   View
@@ -15,8 +16,12 @@ import {
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
+
 const POGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isFetching, setIsFetching] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
   const [serverMessage, setServerMessage] = useState("");
@@ -25,28 +30,50 @@ const POGeneralData = ({ navigation }) => {
   const [deleteId, setDeleteId] = useState(null);
   const userRole = useSelector((state) => state?.auth?.user?.role);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async (pageNumber = 1) => {
+    try {
       const token = await SecureStore.getItemAsync("token");
-      try {
+
+      if (token) {
+        setIsFetching(true);
         const response = await axios.get(`${ServerUrl}/poGeneral/showPO`, {
+          params: {
+            page: pageNumber,
+            limit: 2,
+          },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        setData(response.data);
-        console.log(response.data);
-      } catch (error) {
-        console.error(
-          "Error fetching data:",
-          error.response ? error.response.data : error.message
+
+        const { data: newData, totalPages: fetchedTotalPages } = response.data;
+
+        setData((prevData) =>
+          pageNumber === 1 ? newData : [...prevData, ...newData]
         );
-      } finally {
-        setLoading(false);
+        setTotalPages(fetchedTotalPages);
       }
-    };
-    fetchData();
+    } catch (error) {
+      console.error(
+        "Error fetching data:",
+        error.response ? error.response.data : error.message
+      );
+    } finally {
+      setLoading(false);
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(1);
   }, []);
+
+  const handleLoadMore = () => {
+    if (page < totalPages && !isFetching) {
+      setPage((prevPage) => prevPage + 1);
+      fetchData(page + 1);
+    }
+  };
 
   const handleDelete = async (id) => {
     const token = await SecureStore.getItemAsync("token");
@@ -104,6 +131,41 @@ const POGeneralData = ({ navigation }) => {
     setDeleteId(null);
   };
 
+  const renderItem = ({ item, index }) => (
+    <View key={item._id} style={styles.dataRow}>
+      <Text>
+        S.No: <Text style={styles.boldText}>{index + 1}</Text>
+      </Text>
+      <Text>
+        PO Number: <Text style={styles.boldText}>{item.poNumber}</Text>
+      </Text>
+      <View style={styles.dataButtons}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleShow(item)}
+        >
+          <Text style={styles.actionButtonText}>Show</Text>
+        </TouchableOpacity>
+        {userRole !== ROLES.VIEW_ONLY && (
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEdit(item)}
+            >
+              <Text style={styles.actionButtonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => confirmDelete(item._id)}
+            >
+              <Text style={styles.actionButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       {userRole !== ROLES.VIEW_ONLY && (
@@ -123,42 +185,16 @@ const POGeneralData = ({ navigation }) => {
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
-        <ScrollView>
-          {data.map((item, index) => (
-            <View key={item._id} style={styles.dataRow}>
-              <Text>
-                S.No: <Text style={styles.boldText}>{index + 1}</Text>
-              </Text>
-              <Text>
-                PO Number: <Text style={styles.boldText}>{item.poNumber}</Text>
-              </Text>
-              <View style={styles.dataButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleShow(item)}
-                >
-                  <Text style={styles.actionButtonText}>Show</Text>
-                </TouchableOpacity>
-                {userRole !== ROLES.VIEW_ONLY && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleEdit(item)}
-                    >
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => confirmDelete(item._id)}
-                    >
-                      <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item._id || index.toString()}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetching ? <ActivityIndicator size="small" color="#1b1f26" /> : null
+          }
+        />
       )}
 
       {selectedPO && (
