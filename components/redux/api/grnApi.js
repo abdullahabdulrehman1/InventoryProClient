@@ -16,7 +16,7 @@ export const grnApi = createApi({
   }),
   endpoints: (builder) => ({
     generatePdfReport: builder.mutation({
-      query: ({ fromDate, toDate, sortBy, order, selectedColumns }) => ({
+      query: ({ fromDate, toDate, sortBy, order, columns }) => ({
         url: `grnGeneral/generatePdfReport`,
         method: 'GET',
         params: {
@@ -24,7 +24,7 @@ export const grnApi = createApi({
           toDate,
           sortBy,
           order,
-          columns: selectedColumns.join(','),
+          columns: columns.join(','),
         },
       }),
     }),

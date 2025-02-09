@@ -142,7 +142,7 @@ const PdfPageUtil = ({
               value={endDate || new Date()}
               mode="date"
               display="default"
-              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
+              minimumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 5))}
               maximumDate={new Date()}
               onChange={handleEndDateChange}
             />
