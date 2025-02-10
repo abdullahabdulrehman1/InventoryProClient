@@ -44,7 +44,7 @@ const IssueGeneral = ({ navigation }) => {
 
   const formFields = [
     { name: "grnNumber", label: "GRN Number", icon: "document-text-outline", type: "text" },
-    { name: "issueDate", label: "Issue Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "issueDate", label: "Issue Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "store", label: "Store", icon: "business-outline", type: "text" },
     { name: "requisitionType", label: "Requisition Type", icon: "list-outline", type: "picker", options: [
       { label: "On Requisition", value: "On Requisition" },

@@ -9,7 +9,7 @@ export const requisitionFields = [
   {
     name: "date",
     label: "Date",
-    type: "text",
+    type: "date",
     icon: "calendar-outline",
     placeholder: "dd-mm-yyyy",
   },

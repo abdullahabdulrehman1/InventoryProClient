@@ -6,24 +6,27 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import ServerUrl from "../../config/ServerUrl";
+import FormFields from "../../common/FormFields";
+import FormRows from "../../common/FormRows";
+import ReusableButton from "../../utils/reusableButton";
 
 const POGeneral = ({ navigation }) => {
   const [poNumber, setPoNumber] = useState("");
   const [date, setDate] = useState("");
   const [poDelivery, setPoDelivery] = useState("");
   const [requisitionType, setRequisitionType] = useState("");
+  const [requisitionRequired, setRequisitionRequired] = useState("No");
+  const [requisitionNumber, setRequisitionNumber] = useState("");
   const [supplier, setSupplier] = useState("");
   const [store, setStore] = useState("");
   const [payment, setPayment] = useState("");
@@ -46,6 +49,83 @@ const POGeneral = ({ navigation }) => {
   ]);
   const [loading, setLoading] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+
+  const formFields = [
+    { name: "poNumber", label: "PO #", placeholder: "Enter PO #", type: "text", icon: "document-text-outline" },
+    { name: "date", label: "Date", placeholder: "Enter Date (DD-MM-YYYY)", type: "date", icon: "calendar-outline" },
+    { name: "poDelivery", label: "PO Delivery", placeholder: "Enter PO Delivery Date", type: "date", icon: "calendar-outline" },
+    { name: "requisitionType", label: "Requisition Type", placeholder: "Select Requisition Type", type: "picker", icon: "list-outline", options: [
+      { label: "Select Requisition Type", value: "" },
+      { label: "Standard", value: "Standard" },
+      { label: "Urgent", value: "Urgent" },
+    ]},
+    { name: "requisitionRequired", label: "Requisition Required", placeholder: "Select Yes or No", type: "picker", icon: "list-outline", options: [
+      { label: "No", value: "No" },
+      { label: "Yes", value: "Yes" },
+    ]},
+    { name: "supplier", label: "Supplier", placeholder: "Enter Supplier", type: "text", icon: "business-outline" },
+    { name: "store", label: "Store", placeholder: "Enter Store", type: "text", icon: "storefront-outline" },
+    { name: "payment", label: "Payment", placeholder: "Enter Payment", type: "text", icon: "card-outline" },
+    { name: "purchaser", label: "Purchaser", placeholder: "Enter Purchaser", type: "text", icon: "person-outline" },
+    { name: "remarks", label: "Remarks", placeholder: "Enter Remarks", type: "text", icon: "chatbox-ellipses-outline" },
+  ];
+
+  if (requisitionRequired === "Yes") {
+    formFields.splice(5, 0, { name: "requisitionNumber", label: "Requisition Number", placeholder: "Enter Requisition Number", type: "text", icon: "document-text-outline" });
+  }
+
+  const rowFields = [
+    { name: "prNo", label: "PR No", placeholder: "PR No", type: "text" },
+    { name: "department", label: "Department", placeholder: "Department", type: "text" },
+    { name: "category", label: "Category", placeholder: "Category", type: "text" },
+    { name: "name", label: "Item Name", placeholder: "Item Name", type: "text" },
+    { name: "uom", label: "UOM", placeholder: "UOM", type: "text" },
+    { name: "quantity", label: "Quantity", placeholder: "Quantity", type: "number" },
+    { name: "rate", label: "Rate", placeholder: "Rate", type: "number" },
+    { name: "discountAmount", label: "Discount Amount", placeholder: "Discount Amount", type: "number" },
+    { name: "otherChargesAmount", label: "Other Charges Amount", placeholder: "Other Charges Amount", type: "number" },
+    { name: "rowRemarks", label: "Remarks", placeholder: "Remarks", type: "text" },
+  ];
+
+  const handleFormChange = (name, value) => {
+    switch (name) {
+      case "poNumber":
+        setPoNumber(value);
+        break;
+      case "date":
+        setDate(value);
+        break;
+      case "poDelivery":
+        setPoDelivery(value);
+        break;
+      case "requisitionType":
+        setRequisitionType(value);
+        break;
+      case "requisitionRequired":
+        setRequisitionRequired(value);
+        break;
+      case "requisitionNumber":
+        setRequisitionNumber(value);
+        break;
+      case "supplier":
+        setSupplier(value);
+        break;
+      case "store":
+        setStore(value);
+        break;
+      case "payment":
+        setPayment(value);
+        break;
+      case "purchaser":
+        setPurchaser(value);
+        break;
+      case "remarks":
+        setRemarks(value);
+        break;
+      default:
+        break;
+    }
+  };
 
   const addRow = () => {
     setRows([
@@ -101,6 +181,14 @@ const POGeneral = ({ navigation }) => {
     }
     if (!requisitionType) {
       Alert.alert("Validation Error", "Requisition Type is required.");
+      return false;
+    }
+    if (!requisitionRequired) {
+      Alert.alert("Validation Error", "Requisition Required is required.");
+      return false;
+    }
+    if (requisitionRequired === "Yes" && !requisitionNumber) {
+      Alert.alert("Validation Error", "Requisition Number is required.");
       return false;
     }
     if (!supplier) {
@@ -225,6 +313,8 @@ const POGeneral = ({ navigation }) => {
         date: isoDate,
         poDelivery: isoDeliveryDate,
         requisitionType,
+        requisitionRequired,
+        requisitionNumber: requisitionRequired === "Yes" ? requisitionNumber : undefined,
         supplier,
         store,
         payment,
@@ -271,258 +361,36 @@ const POGeneral = ({ navigation }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>PO #</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={poNumber}
-            onChangeText={setPoNumber}
-            placeholder="Enter PO #"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="Enter Date (DD-MM-YYYY)"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>PO Delivery</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={poDelivery}
-            onChangeText={setPoDelivery}
-            placeholder="Enter PO Delivery Date (DD-MM-YYYY)"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="list-outline" size={20} color="black" />
-            <Text style={styles.label}>Requisition Type</Text>
-          </View>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={requisitionType}
-              style={styles.picker}
-              onValueChange={(itemValue) => setRequisitionType(itemValue)}
-            >
-              <Picker.Item label="Select Requisition Type" value="" />
-              <Picker.Item label="Standard" value="Standard" />
-              <Picker.Item label="Urgent" value="Urgent" />
-            </Picker>
-          </View>
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="business-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplier}
-            onChangeText={setSupplier}
-            placeholder="Enter Supplier"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="storefront-outline" size={20} color="black" />
-            <Text style={styles.label}>Store</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={store}
-            onChangeText={setStore}
-            placeholder="Enter Store"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="card-outline" size={20} color="black" />
-            <Text style={styles.label}>Payment</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={payment}
-            onChangeText={setPayment}
-            placeholder="Enter Payment"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="person-outline" size={20} color="black" />
-            <Text style={styles.label}>Purchaser</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={purchaser}
-            onChangeText={setPurchaser}
-            placeholder="Enter Purchaser"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="chatbox-ellipses-outline" size={20} color="black" />
-            <Text style={styles.label}>Remarks</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={remarks}
-            onChangeText={setRemarks}
-            placeholder="Enter Remarks"
-          />
-        </View>
-              {rows.map((row, index) => (
-          <View key={index} style={styles.row}>
-            <Text style={styles.rowLabel}>Row {index + 1}</Text>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>PR No:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="PR No"
-                value={row.prNo}
-                onChangeText={(text) => handleInputChange(index, "prNo", text)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Department:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Department"
-                value={row.department}
-                onChangeText={(text) => handleInputChange(index, "department", text)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Category:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Category"
-                value={row.category}
-                onChangeText={(text) => handleInputChange(index, "category", text)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Item Name:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Item Name"
-                value={row.name}
-                onChangeText={(text) => handleInputChange(index, "name", text)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>UOM:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="UOM"
-                value={row.uom}
-                onChangeText={(text) => handleInputChange(index, "uom", text)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Quantity:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Quantity"
-                value={String(row.quantity)}
-                onChangeText={(text) => handleInputChange(index, "quantity", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Rate:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Rate"
-                value={String(row.rate)}
-                onChangeText={(text) => handleInputChange(index, "rate", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Discount Amount:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Discount Amount"
-                value={String(row.discountAmount)}
-                onChangeText={(text) => handleInputChange(index, "discountAmount", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Other Charges Amount:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Other Charges Amount"
-                value={String(row.otherChargesAmount)}
-                onChangeText={(text) => handleInputChange(index, "otherChargesAmount", text)}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Remarks:</Text>
-              <TextInput
-                style={styles.rowInput}
-                placeholder="Remarks"
-                value={row.rowRemarks}
-                onChangeText={(text) => handleInputChange(index, "rowRemarks", text)}
-              />
-            </View>
-            {index > 0 && (
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeRow(index)}
-              >
-                <Ionicons name="remove-circle" size={24} color="red" />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-        <View style={styles.buttonContainer}>
-          <Button title="Add Row" onPress={addRow} color="#1b1f26" />
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Submit</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("POGeneralData")}
-          >
-            <Text style={styles.buttonText}>Show PO General Data</Text>
-          </TouchableOpacity>
-        </View>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={[styles.button, styles.pdfButton]}
-                    onPress={() => navigation.navigate('POGeneralPDF')}
-                  >
-                    <Text style={styles.buttonText}>Generate PDF Report</Text>
-                  </TouchableOpacity>
-                </View>
+        <FormFields
+          fields={formFields}
+          values={{
+            poNumber,
+            date,
+            poDelivery,
+            requisitionType,
+            requisitionRequired,
+            requisitionNumber,
+            supplier,
+            store,
+            payment,
+            purchaser,
+            remarks,
+          }}
+          onChange={handleFormChange}
+          errors={{}}
+        />
+        <FormRows
+          rows={rows}
+          rowFields={rowFields}
+          handleRowInputChange={handleInputChange}
+          removeRow={removeRow}
+          errors={{}}
+          isSubmitted={false}
+        />
+        <ReusableButton onPress={addRow} text="Add Row" loading={false} />
+        <ReusableButton onPress={handleSubmit} text="Submit" loading={loading} />
+        <ReusableButton onPress={() => navigation.navigate("POGeneralData")} text="Show PO General Data" />
+        <ReusableButton onPress={() => navigation.navigate('POGeneralPDF')} text="Generate PDF Report" />
       </ScrollView>
 
       <Modal

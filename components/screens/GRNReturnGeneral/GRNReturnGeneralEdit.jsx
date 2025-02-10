@@ -34,9 +34,9 @@ const GRNReturnGeneralEdit = ({ navigation, route }) => {
 
   const formFields = [
     { name: "grnrNumber", label: "GRNR Number", icon: "document-text-outline", type: "text" },
-    { name: "grnrDate", label: "GRNR Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "grnrDate", label: "GRNR Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "grnNumber", label: "GRN Number", icon: "document-text-outline", type: "text" },
-    { name: "grnDate", label: "GRN Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "grnDate", label: "GRN Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "remarks", label: "Remarks", icon: "chatbox-ellipses-outline", type: "text" },
   ];
 

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { CommonActions } from "@react-navigation/native";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -11,11 +11,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import FormFields from "../../common/FormFields";
+import FormRows from "../../common/FormRows";
 import ServerUrl from "../../config/ServerUrl";
 import ReusableModal from "../../utils/ReusableModal";
 import ReusableButton from "../../utils/reusableButton";
-import FormRows from "../../common/FormRows";
-import FormFields from "../../common/FormFields";
 
 const GRNGeneralEdit = ({ navigation, route }) => {
   const { grn } = route.params; // Assuming GRN data is passed via route params
@@ -53,12 +53,12 @@ const GRNGeneralEdit = ({ navigation, route }) => {
 
   const formFields = [
     { name: "grnNumber", label: "GRN Number", placeholder: "GRN Number", type: "text", icon: "document-text-outline" },
-    { name: "date", label: "Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "date", label: "Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "supplierChallanNumber", label: "Supplier Challan Number", placeholder: "Supplier Challan Number", type: "text", icon: "document-text-outline" },
-    { name: "supplierChallanDate", label: "Supplier Challan Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "supplierChallanDate", label: "Supplier Challan Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "supplier", label: "Supplier", placeholder: "Supplier", type: "text", icon: "business-outline" },
     { name: "inwardNumber", label: "Inward Number", placeholder: "Inward Number", type: "text", icon: "document-text-outline" },
-    { name: "inwardDate", label: "Inward Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "inwardDate", label: "Inward Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "remarks", label: "Remarks", placeholder: "Remarks", type: "text", icon: "chatbox-ellipses-outline" },
   ];
 

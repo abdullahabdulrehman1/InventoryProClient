@@ -39,7 +39,7 @@ const POGeneralData = ({ navigation }) => {
         const response = await axios.get(`${ServerUrl}/poGeneral/showPO`, {
           params: {
             page: pageNumber,
-            limit: 2,
+            limit: 8,
           },
           headers: {
             Authorization: `Bearer ${token}`,

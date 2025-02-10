@@ -57,9 +57,9 @@ const IssueReturnGeneralEdit = ({ navigation, route }) => {
 
   const formFields = [
     { name: "irNumber", label: "IR Number", icon: "document-text-outline", type: "text" },
-    { name: "irDate", label: "IR Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "irDate", label: "IR Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "drNumber", label: "DR Number", icon: "document-text-outline", type: "text" },
-    { name: "drDate", label: "DR Date", icon: "calendar-outline", type: "text", placeholder: "dd-mm-yyyy" },
+    { name: "drDate", label: "DR Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "remarks", label: "Remarks", icon: "chatbox-ellipses-outline", type: "text" },
   ];
 

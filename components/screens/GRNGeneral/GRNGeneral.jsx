@@ -61,12 +61,12 @@ const GRNGeneral = ({ navigation }) => {
 
   const formFields = [
     { name: "grnNumber", label: "GRN Number", placeholder: "GRN Number", type: "text", icon: "document-text-outline" },
-    { name: "date", label: "Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "date", label: "Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "supplierChallanNumber", label: "Supplier Challan Number", placeholder: "Supplier Challan Number", type: "text", icon: "document-text-outline" },
-    { name: "supplierChallanDate", label: "Supplier Challan Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "supplierChallanDate", label: "Supplier Challan Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "supplier", label: "Supplier", placeholder: "Supplier", type: "text", icon: "business-outline" },
     { name: "inwardNumber", label: "Inward Number", placeholder: "Inward Number", type: "text", icon: "document-text-outline" },
-    { name: "inwardDate", label: "Inward Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "inwardDate", label: "Inward Date", placeholder: "dd-mm-yyyy", type: "date", icon: "calendar-outline" },
     { name: "remarks", label: "Remarks", placeholder: "Remarks", type: "text", icon: "chatbox-ellipses-outline" },
   ];
 
