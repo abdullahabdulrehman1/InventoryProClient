@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View

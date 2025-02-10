@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
   RefreshControl,
   ScrollView,
@@ -20,6 +21,9 @@ import ServerUrl from "../../config/ServerUrl";
 
 const GRNGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isFetching, setIsFetching] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGRN, setSelectedGRN] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,58 +33,66 @@ const GRNGeneralData = ({ navigation }) => {
   const [deleteId, setDeleteId] = useState(null);
   const userRole = useSelector((state) => state?.auth?.user?.role);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const token = await SecureStore.getItemAsync("token");
-
+  const fetchData = async (pageNumber = 1) => {
     try {
-      const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
-        params: { token }, headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setData(response.data.grn || []);
-      setError(null);
-      console.log(response.data.grn);
+      const token = await SecureStore.getItemAsync("token");
+
+      if (token) {
+        setIsFetching(true);
+        const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
+          params: {
+            page: pageNumber,
+            limit: 8,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const { data: newData, totalPages: fetchedTotalPages } = response.data;
+
+        setData((prevData) =>
+          pageNumber === 1 ? newData : [...prevData, ...newData]
+        );
+        setTotalPages(fetchedTotalPages);
+      }
     } catch (error) {
       console.error(
         "Error fetching data:",
         error.response ? error.response.data : error.message
       );
-      if (
-        error.response &&
-        error.response.data.message === "GRN returns not found"
-      ) {
-        setError("GRN returns not found");
-      } else {
-        setError("Something went wrong");
-      }
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(1);
   }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData().then(() => setRefreshing(false));
+    fetchData(1).then(() => setRefreshing(false));
   }, []);
+
+  const handleLoadMore = () => {
+    if (page < totalPages && !isFetching) {
+      setPage((prevPage) => prevPage + 1);
+      fetchData(page + 1);
+    }
+  };
 
   const handleDelete = async (grnId) => {
     const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.delete(
-        `${ServerUrl}/grnGeneral/delete-grn`,
+        `${ServerUrl}/grnGeneral/delete-grn/${grnId}`,
         {
-          data: { token, grnId },
-        }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       console.log(response.data);
       setData(data.filter((item) => item._id !== grnId));
@@ -131,67 +143,66 @@ const GRNGeneralData = ({ navigation }) => {
     setDeleteId(null);
   };
 
+  const renderItem = ({ item, index }) => (
+    <View key={item._id} style={styles.dataRow}>
+      <Text>
+        S.No: <Text style={styles.boldText}>{index + 1}</Text>
+      </Text>
+      <Text>
+        GRN Number: <Text style={styles.boldText}>{item.grnNumber}</Text>
+      </Text>
+      <View style={styles.dataButtons}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleShow(item)}
+        >
+          <Text style={styles.actionButtonText}>Show</Text>
+        </TouchableOpacity>
+        {userRole !== ROLES.VIEW_ONLY && (
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEdit(item)}
+            >
+              <Text style={styles.actionButtonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => confirmDelete(item._id)}
+            >
+              <Text style={styles.actionButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      {userRole !== ROLES.VIEW_ONLY && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate("GRNGeneral")}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.header}>GRN General Data</Text>
-        </View>
-      )}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.navigate("GRNGeneral")}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.header}>GRN General Data</Text>
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
-        <ScrollView
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item._id || index.toString()}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-        >
-          {error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : Array.isArray(data) && data.length > 0 ? (
-            data.map((item, index) => (
-              <View key={item._id} style={styles.dataRow}>
-                <Text>
-                  S.No: <Text style={styles.boldText}>{index + 1}</Text>
-                </Text>
-                <Text>
-                  GRN Number:{" "}
-                  <Text style={styles.boldText}>{item.grnNumber}</Text>
-                </Text>
-                <View style={styles.dataButtons}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleShow(item)}
-                  >
-                    <Text style={styles.actionButtonText}>Show</Text>
-                  </TouchableOpacity>
-                  {userRole !== ROLES.VIEW_ONLY && (
-                    <>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleEdit(item)}
-                      >
-                        <Text style={styles.actionButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => confirmDelete(item._id)}
-                      >
-                        <Text style={styles.actionButtonText}>Delete</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noRecordText}>No record found</Text>
-          )}
-        </ScrollView>
+          ListFooterComponent={
+            isFetching ? <ActivityIndicator size="small" color="#1b1f26" /> : null
+          }
+        />
       )}
 
       {selectedGRN && (
@@ -212,7 +223,9 @@ const GRNGeneralData = ({ navigation }) => {
                   </Text>
                   <Text style={styles.modalText}>
                     Date:{" "}
-                    <Text style={styles.boldText}>{selectedGRN.date}</Text>
+                    <Text style={styles.boldText}>
+                      {new Date(selectedGRN.date).toLocaleDateString()}
+                    </Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Supplier Challan Number:{" "}
@@ -223,7 +236,7 @@ const GRNGeneralData = ({ navigation }) => {
                   <Text style={styles.modalText}>
                     Supplier Challan Date:{" "}
                     <Text style={styles.boldText}>
-                      {selectedGRN.supplierChallanDate}
+                      {new Date(selectedGRN.supplierChallanDate).toLocaleDateString()}
                     </Text>
                   </Text>
                   <Text style={styles.modalText}>
@@ -232,14 +245,12 @@ const GRNGeneralData = ({ navigation }) => {
                   </Text>
                   <Text style={styles.modalText}>
                     Inward Number:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRN.inwardNumber}
-                    </Text>
+                    <Text style={styles.boldText}>{selectedGRN.inwardNumber}</Text>
                   </Text>
                   <Text style={styles.modalText}>
                     Inward Date:{" "}
                     <Text style={styles.boldText}>
-                      {selectedGRN.inwardDate}
+                      {new Date(selectedGRN.inwardDate).toLocaleDateString()}
                     </Text>
                   </Text>
                   <Text style={styles.modalText}>
@@ -268,21 +279,19 @@ const GRNGeneralData = ({ navigation }) => {
                           Unit: <Text style={styles.boldText}>{row.unit}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          PO Qty:{" "}
+                          PO Quantity:{" "}
                           <Text style={styles.boldText}>{row.poQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Previous Qty:{" "}
+                          Previous Quantity:{" "}
                           <Text style={styles.boldText}>{row.previousQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Balance PO Qty:{" "}
-                          <Text style={styles.boldText}>
-                            {row.balancePoQty}
-                          </Text>
+                          Balance PO Quantity:{" "}
+                          <Text style={styles.boldText}>{row.balancePoQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>
-                          Received Qty:{" "}
+                          Received Quantity:{" "}
                           <Text style={styles.boldText}>{row.receivedQty}</Text>
                         </Text>
                         <Text style={styles.modalText}>

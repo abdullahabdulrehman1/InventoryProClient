@@ -4,26 +4,42 @@ import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   Alert,
-  Button,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
-  View
+  View,
 } from "react-native";
 import FormRows from "../../common/FormRows";
 import ServerUrl from "../../config/ServerUrl";
 import ReusableModal from "../../utils/ReusableModal";
 import ReusableButton from "../../utils/reusableButton";
+import FormFields from "../../common/FormFields";
+
 const GRNGeneral = ({ navigation }) => {
-  const [grnNumber, setGrnNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [supplierChallanNumber, setSupplierChallanNumber] = useState("");
-  const [supplierChallanDate, setSupplierChallanDate] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [inwardNumber, setInwardNumber] = useState("");
-  const [inwardDate, setInwardDate] = useState("");
-  const [remarks, setRemarks] = useState("");
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "";
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  const parseDate = (dateStr) => {
+    const [day, month, year] = dateStr.split("-");
+    return new Date(`${year}-${month}-${day}`).toISOString();
+  };
+
+  const [formValues, setFormValues] = useState({
+    grnNumber: "",
+    date: "",
+    supplierChallanNumber: "",
+    supplierChallanDate: "",
+    supplier: "",
+    inwardNumber: "",
+    inwardDate: "",
+    remarks: "",
+  });
+
   const [rows, setRows] = useState([
     {
       poNo: "",
@@ -42,18 +58,38 @@ const GRNGeneral = ({ navigation }) => {
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessages, setErrorMessages] = useState([]);
+
+  const formFields = [
+    { name: "grnNumber", label: "GRN Number", placeholder: "GRN Number", type: "text", icon: "document-text-outline" },
+    { name: "date", label: "Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "supplierChallanNumber", label: "Supplier Challan Number", placeholder: "Supplier Challan Number", type: "text", icon: "document-text-outline" },
+    { name: "supplierChallanDate", label: "Supplier Challan Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "supplier", label: "Supplier", placeholder: "Supplier", type: "text", icon: "business-outline" },
+    { name: "inwardNumber", label: "Inward Number", placeholder: "Inward Number", type: "text", icon: "document-text-outline" },
+    { name: "inwardDate", label: "Inward Date", placeholder: "dd-mm-yyyy", type: "text", icon: "calendar-outline" },
+    { name: "remarks", label: "Remarks", placeholder: "Remarks", type: "text", icon: "chatbox-ellipses-outline" },
+  ];
+
   const rowFields = [
-    { name: "poNo", label: "PO Number", placeholder: "PO Number" },
-    { name: "department", label: "Department", placeholder: "Department" },
-    { name: "category", label: "Category", placeholder: "Category" },
-    { name: "name", label: "Item Name", placeholder: "Item Name" },
-    { name: "unit", label: "Unit", placeholder: "Unit" },
+    { name: "poNo", label: "PO Number", placeholder: "PO Number", type: "text" },
+    { name: "department", label: "Department", placeholder: "Department", type: "text" },
+    { name: "category", label: "Category", placeholder: "Category", type: "text" },
+    { name: "name", label: "Item Name", placeholder: "Item Name", type: "text" },
+    { name: "unit", label: "Unit", placeholder: "Unit", type: "text" },
     { name: "poQty", label: "PO Quantity", placeholder: "PO Quantity", type: "number" },
     { name: "previousQty", label: "Previous Quantity", placeholder: "Previous Quantity", type: "number" },
     { name: "balancePoQty", label: "Balance PO Quantity", placeholder: "Balance PO Quantity", type: "number" },
     { name: "receivedQty", label: "Received Quantity", placeholder: "Received Quantity", type: "number" },
-    { name: "rowRemarks", label: "Row Remarks", placeholder: "Row Remarks" },
+    { name: "rowRemarks", label: "Row Remarks", placeholder: "Row Remarks", type: "text" },
   ];
+
+  const handleFormChange = (name, value) => {
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
+
   const addRow = () => {
     setRows([
       ...rows,
@@ -83,45 +119,85 @@ const GRNGeneral = ({ navigation }) => {
   };
 
   const handleInputChange = (index, name, value) => {
-    const values = [...rows];
-    values[index][name] = value;
-    setRows(values);
+    const updatedRows = rows.map((row, i) =>
+      i === index ? { ...row, [name]: value } : row
+    );
+    setRows(updatedRows);
   };
 
-  const handleSubmit = async () => {
+  const validateDate = (date) => {
+    const regex = /^\d{2}-\d{2}-\d{4}$/;
+    return regex.test(date);
+  };
+
+    const handleSubmit = async () => {
+    // Validate required fields
+    if (
+      !formValues.grnNumber ||
+      !formValues.date ||
+      !formValues.supplierChallanNumber ||
+      !formValues.supplierChallanDate ||
+      !formValues.supplier ||
+      !formValues.inwardNumber ||
+      !formValues.inwardDate ||
+      rows.some(row => 
+        !row.poNo ||
+        !row.department ||
+        !row.category ||
+        !row.name ||
+        !row.unit ||
+        !row.poQty ||
+        !row.previousQty ||
+        !row.balancePoQty ||
+        !row.receivedQty
+      )
+    ) {
+      Alert.alert("Error", "Please fill in all required fields.");
+      return;
+    }
+  
+    // Validate date format
+    if (
+      !validateDate(formValues.date) ||
+      !validateDate(formValues.supplierChallanDate) ||
+      !validateDate(formValues.inwardDate)
+    ) {
+      Alert.alert("Error", "Please enter dates in the format dd-mm-yyyy.");
+      return;
+    }
+  
     setLoading(true);
     const token = await SecureStore.getItemAsync("token");
     const user = await SecureStore.getItemAsync("user");
     const userId = JSON.parse(user)._id;
-
+    const items = rows;
     try {
       const response = await axios.post(`${ServerUrl}/grnGeneral/createGRN`, {
-        token,
         userId,
-        grnNumber,
-        date,
-        supplierChallanNumber,
-        supplierChallanDate,
-        supplier,
-        inwardNumber,
-        inwardDate,
-        remarks,
-        rows,
-      }, {
+        grnNumber: formValues.grnNumber,
+        date: formValues.date,
+        supplierChallanNumber: formValues.supplierChallanNumber,
+        supplierChallanDate: formValues.supplierChallanDate,
+        supplier: formValues.supplier,
+        inwardNumber: formValues.inwardNumber,
+        inwardDate: formValues.inwardDate,
+        remarks: formValues.remarks,
+        rows: items,
+      },{
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.status === 201) {
         setSuccessModalVisible(true);
       } else {
-        setErrorMessages(response.data.errors.map((error) => error.msg));
+        setErrorMessages([response.data.message]);
         setErrorModalVisible(true);
       }
     } catch (error) {
       console.error("Error response:", error.response);
       if (error.response) {
-        setErrorMessages(error.response.data.errors.map((error) => error.msg));
+        setErrorMessages([error.response.data.message]);
       } else if (error.request) {
         setErrorMessages(["No response received from server."]);
       } else {
@@ -133,151 +209,47 @@ const GRNGeneral = ({ navigation }) => {
     }
   };
 
+  const handleSuccessModalClose = () => {
+    setSuccessModalVisible(false);
+    navigation.navigate("GRNGeneralData");
+  };
+
   return (
     <View>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>GRN Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={grnNumber}
-            onChangeText={setGrnNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanNumber}
-            onChangeText={setSupplierChallanNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier Challan Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplierChallanDate}
-            onChangeText={setSupplierChallanDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="business-outline" size={20} color="black" />
-            <Text style={styles.label}>Supplier</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={supplier}
-            onChangeText={setSupplier}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="document-text-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Number</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={inwardNumber}
-            onChangeText={setInwardNumber}
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="calendar-outline" size={20} color="black" />
-            <Text style={styles.label}>Inward Date</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={inwardDate}
-            onChangeText={setInwardDate}
-            placeholder="dd-mm-yyyy"
-            required
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <View style={styles.labelContainer}>
-            <Ionicons name="chatbox-ellipses-outline" size={20} color="black" />
-            <Text style={styles.label}>Remarks</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            value={remarks}
-            onChangeText={setRemarks}
-          />
-        </View>
+        <FormFields
+          fields={formFields}
+          values={formValues}
+          onChange={handleFormChange}
+          errors={{}}
+        />
         <FormRows
-        rows={rows}
-        rowFields={rowFields}
-        handleRowInputChange={handleInputChange}
-        removeRow={removeRow}
-        errors={{}}
-        isSubmitted={false}
-      />
-        <View style={styles.buttonContainer}>
-          <Button title="Add Row" onPress={addRow} color="#1b1f26" />
-        </View>
-        <ReusableButton
-          onPress={handleSubmit}
-          loading={loading}
-          text="Submit"
+          rows={rows}
+          rowFields={rowFields}
+          handleRowInputChange={handleInputChange}
+          removeRow={removeRow}
+          errors={{}}
+          isSubmitted={false}
         />
-        <ReusableButton
-          onPress={() => navigation.navigate("GRNGeneralData")}
-          text="Show GRN General Data"
-        />
-        <ReusableButton
-          onPress={() => navigation.navigate('GRNPdfPage')}
-          text="Generate PDF Report"
-        />
-       
+        <ReusableButton onPress={addRow} text="Add Row" loading={false} />
+        <ReusableButton onPress={handleSubmit} text="Submit" loading={loading} />
+        <ReusableButton onPress={() => navigation.navigate("GRNGeneralData")} text="Show GRN General Data" />
+        <ReusableButton onPress={() => navigation.navigate('GRNPdfPage')} text="Generate PDF Report" />
       </ScrollView>
 
-    
       <ReusableModal
         visible={successModalVisible}
         onClose={() => setSuccessModalVisible(false)}
         headerText="Success"
         bodyText="GRN created successfully."
         buttonText="OK"
-        onButtonPress={() => {
-          setSuccessModalVisible(false);
-          navigation.navigate("GRNGeneralData");
-        }}
+        onButtonPress={handleSuccessModalClose}
       />
-      
-          <ReusableModal
+
+      <ReusableModal
         visible={errorModalVisible}
         onClose={() => setErrorModalVisible(false)}
         headerText="Error"
@@ -285,7 +257,6 @@ const GRNGeneral = ({ navigation }) => {
         buttonText="OK"
         onButtonPress={() => setErrorModalVisible(false)}
       />
-  
     </View>
   );
 };
@@ -319,59 +290,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     marginTop: 5,
-  },
-  row: {
-    marginBottom: 15,
-    position: "relative",
-  },
-  rowLabel: {
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  rowInput: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 20,
-    marginBottom: 5,
-  },
-  removeButton: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-  },
-  button: {
-    backgroundColor: "#1b1f26",
-    padding: 15,
-    width: "100%",
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
   },
 });
 
