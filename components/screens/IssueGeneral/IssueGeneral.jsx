@@ -131,10 +131,7 @@ const IssueGeneral = ({ navigation }) => {
   const handleSubmit = async () => {
     setIsSubmitted(true);
     const validationRules = [
-      {
-        field: "grnNumber",
-        validations: [{ method: validationMethods.required, message: "GRN Number is required" }],
-      },
+     
       {
         field: "issueDate",
         validations: [{ method: validationMethods.required, message: "Issue Date is required" }, { method: validationMethods.validateDate, message: "Issue Date must be in dd-mm-yyyy format" }],
