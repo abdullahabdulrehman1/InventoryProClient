@@ -1,11 +1,7 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PropTypes from "prop-types";
-import ContainerStyles from "../styles/ContainerStyles";
-import ButtonStyles from "../styles/ButtonStyles";
-import FormStyles from "../styles/FormStyles";
-import ModalStyles from "../styles/ModalStyles";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const HeaderBackArrow = ({ navigation, title, targetScreen }) => {
   return (

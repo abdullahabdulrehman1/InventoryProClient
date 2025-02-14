@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
   View,
   Text,
   FlatList,
-  ActivityIndicator,
-  StyleSheet
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  LayoutAnimation
 } from 'react-native'
 import { useSelector } from 'react-redux'
 import { Ionicons } from '@expo/vector-icons'
@@ -18,8 +20,14 @@ import ConfirmationModal from '../../utils/ConfirmationModal'
 import { ROLES } from '../../auth/role'
 import ItemDetailCard from '../../utils/ItemDetailCard'
 import DetailHeader from '../../utils/DetailHeader'
+import SearchBar from '../../utils/SearchBar'
+import SkeletonLoader from '../../ui/SkeletonLoader'
+import AnimatedLoader from '../../utils/AnimatedLoader'
+import { skeletonStyles } from '../../styles/Animations'
+import { animationStyles } from '../../styles/Animations'
 
 const RequisitionData = ({ navigation }) => {
+  // State Management
   const [data, setData] = useState([])
   const [page, setPage] = useState(1)
   const [isFetching, setIsFetching] = useState(false)
@@ -29,140 +37,206 @@ const RequisitionData = ({ navigation }) => {
   const [loading, setLoading] = useState(true)
   const [confirmVisible, setConfirmVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+
+  // Refs and Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current
   const userRole = useSelector(state => state?.auth?.user?.role)
 
-  const fetchData = async (pageNumber = 1) => {
+  // Data Fetching
+  const fetchData = async (pageNumber = 1, searchQuery = '') => {
     try {
       const token = await SecureStore.getItemAsync('token')
-      if (token) {
-        setIsFetching(true)
-        const response = await axios.get(
-          `${ServerUrl}/requisition/showRequisition`,
-          {
-            params: { page: pageNumber, limit: 10 },
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
+      if (!token) return
 
-        const { data: newData, totalPages: fetchedTotalPages } = response.data
-        setData(prevData =>
-          pageNumber === 1 ? newData : [...prevData, ...newData]
-        )
-        setTotalPages(fetchedTotalPages)
-      }
-    } catch (error) {
-      console.error(
-        'Error fetching data:',
-        error.response ? error.response.data : error.message
+      setIsFetching(true)
+      const endpoint = searchQuery
+        ? '/requisition/searchRequisitionByDrNumber'
+        : '/requisition/showRequisition'
+
+      const { data: response } = await axios.get(ServerUrl + endpoint, {
+        params: {
+          ...(searchQuery && { drNumber: searchQuery }),
+          page: pageNumber,
+          limit: 10
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      setData(prev =>
+        pageNumber === 1 ? response.data : [...prev, ...response.data]
       )
+      setTotalPages(response.totalPages)
+      setErrorMessage('')
+    } catch (error) {
+      handleFetchError(error)
     } finally {
       setLoading(false)
       setIsFetching(false)
     }
   }
 
+  const handleFetchError = error => {
+    const message = error.response?.data?.message || 'Error fetching data'
+    setErrorMessage(message)
+    setData([])
+    console.error('Fetch error:', error)
+  }
+
+  // Effects
   useEffect(() => {
     fetchData(1)
   }, [])
 
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }).start()
+    }
+  }, [loading])
+
+  // Pagination
   const handleLoadMore = () => {
     if (page < totalPages && !isFetching) {
       setPage(prev => prev + 1)
-      fetchData(page + 1)
+      fetchData(page + 1, searchQuery)
     }
   }
 
+  // Search Handling
+  const handleSearch = searchText => {
+    setSearchQuery(searchText)
+    setPage(1)
+    fetchData(1, searchText)
+  }
+
+  // Delete Handling
   const handleDelete = async id => {
-    const token = await SecureStore.getItemAsync('token')
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     try {
+      const token = await SecureStore.getItemAsync('token')
       await axios.delete(`${ServerUrl}/requisition/deleteRequisition`, {
         data: { requisitionId: id },
         headers: { Authorization: `Bearer ${token}` }
       })
-      setData(data.filter(item => item._id !== id))
-      setConfirmVisible(false)
+      setData(prev => prev.filter(item => item._id !== id))
     } catch (error) {
       console.error('Delete error:', error.response?.data || error.message)
+    } finally {
+      setConfirmVisible(false)
     }
   }
 
-  const formatDate = dateString => {
-    const date = new Date(dateString)
-    return format(date, 'dd-MM-yyyy')
-  }
+  // Date Formatting
+  const formatDate = dateString => format(new Date(dateString), 'dd-MM-yyyy')
+
+  // Loading Skeletons
+  const renderSkeletons = () =>
+    [...Array(5)].map((_, i) => (
+      <SkeletonLoader
+        key={i}
+        style={skeletonStyles.card}
+        lines={[
+          { width: '60%', height: 20 },
+          { width: '40%', height: 16 },
+          { width: '50%', height: 16 }
+        ]}
+      />
+    ))
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons
-          name='arrow-back'
-          size={24}
-          color='#fff'
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.headerTitle}>Requisition Data</Text>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator size='large' color='#2b6cb0' />
-      ) : (
-        <FlatList
-          data={data}
-          renderItem={({ item }) => (
-            <DataCard
-              item={item}
-              titleKey='drNumber'
-              subtitleKey='department'
-              fields={[
-                { label: 'Date', key: 'date', format: formatDate }, // Add any additional fields
-                { label: 'Requisition Type', key: 'requisitionType' }
-              ]}
-              actions={
-                userRole !== ROLES.VIEW_ONLY
-                  ? [
-                      {
-                        label: 'Show',
-                        handler: item => {
-                          setSelectedRequisition(item)
-                          setModalVisible(true)
-                        },
-                        style: { backgroundColor: '#3182ce' }
-                      },
-                      {
-                        label: 'Edit',
-                        handler: item =>
-                          navigation.navigate('RequisitionEdit', {
-                            requisition: item
-                          }),
-                        style: { backgroundColor: '#2b6cb0' }
-                      },
-                      {
-                        label: 'Delete',
-                        handler: item => {
-                          setDeleteId(item._id)
-                          setConfirmVisible(true)
-                        },
-                        style: { backgroundColor: '#e53e3e' }
-                      }
-                    ]
-                  : []
-              }
-              style={styles.dataCard}
-              onPress={() => {
-                setSelectedRequisition(item)
-                setModalVisible(true)
-              }}
-            />
-          )}
-          keyExtractor={(item, index) => item._id || index.toString()}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isFetching && <ActivityIndicator size='small' color='#2b6cb0' />
-          }
-        />
+      {/* Header Section */}
+      {userRole !== ROLES.VIEW_ONLY && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name='arrow-back' size={24} color='#1a365d' />
+          </TouchableOpacity>
+          <Text style={styles.header}>Requisition Data</Text>
+        </View>
       )}
 
+      {/* Search Section */}
+      <SearchBar onSearch={handleSearch} />
+
+      {/* Content Section */}
+      {loading ? (
+        <View style={styles.loadingContainer}>{renderSkeletons()}</View>
+      ) : (
+        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+          {errorMessage ? (
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+          ) : (
+            <FlatList
+              data={data}
+              keyExtractor={(item, index) => item._id || index.toString()}
+              renderItem={({ item }) => (
+                <DataCard
+                  item={item}
+                  titleKey='drNumber'
+                  subtitleKey='department'
+                  fields={[
+                    { label: 'Date', key: 'date', format: formatDate },
+                    { label: 'Type', key: 'requisitionType' }
+                  ]}
+                  actions={
+                    userRole !== ROLES.VIEW_ONLY
+                      ? [
+                          {
+                            label: 'Show',
+                            handler: () => {
+                              setSelectedRequisition(item)
+                              setModalVisible(true)
+                            },
+                            style: animationStyles.primaryButton
+                          },
+                          {
+                            label: 'Edit',
+                            handler: () =>
+                              navigation.navigate('RequisitionEdit', {
+                                requisition: item
+                              }),
+                            style: animationStyles.secondaryButton
+                          },
+                          {
+                            label: 'Delete',
+                            handler: () => {
+                              setDeleteId(item._id)
+                              setConfirmVisible(true)
+                            },
+                            style: animationStyles.dangerButton
+                          }
+                        ]
+                      : []
+                  }
+                  onPress={() => {
+                    setSelectedRequisition(item)
+                    setModalVisible(true)
+                  }}
+                  animation='fadeIn'
+                  duration={300}
+                />
+              )}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                isFetching && (
+                  <View style={styles.loadingFooter}>
+                    <AnimatedLoader color='#2b6cb0' />
+                    <Text style={styles.loadingText}>Loading more...</Text>
+                  </View>
+                )
+              }
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {/* Modals */}
       <DetailModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -172,23 +246,18 @@ const RequisitionData = ({ navigation }) => {
           <>
             <DetailHeader
               title='DR Number'
-              value={selectedRequisition.drNumber || 'N/A'}
+              value={selectedRequisition.drNumber}
             />
-
             <DetailHeader
               title='Department'
-              value={
-                selectedRequisition.department || 'No department specified'
-              }
+              value={selectedRequisition.department}
             />
-
             <DetailHeader
               title='Date'
-              value={selectedRequisition.date}
-              formatValue={formatDate}
+              value={formatDate(selectedRequisition.date)}
             />
             <DetailHeader
-              title='Requisition Type'
+              title='Type'
               value={selectedRequisition.requisitionType}
             />
 
@@ -220,41 +289,44 @@ const RequisitionData = ({ navigation }) => {
   )
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: '#f7fafc'
+    padding: 16,
+    backgroundColor: '#f8fafc'
   },
-  header: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2b6cb0',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15
+    marginBottom: 20
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
-    marginLeft: 15
+  header: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginLeft: 12,
+    color: '#1e3a8a'
   },
-  dataCard: {
-    marginHorizontal: 10,
-    marginBottom: 15
+  loadingContainer: {
+    flex: 1,
+    padding: 16
   },
-  itemCard: {
-    marginHorizontal: 5,
-    marginVertical: 8
+  errorMessage: {
+    fontSize: 16,
+    color: '#dc2626',
+    textAlign: 'center',
+    marginTop: 20
   },
-  detailLabel: {
-    fontSize: 12,
-    color: '#718096'
+  loadingFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16
   },
-  detailValue: {
+  loadingText: {
+    marginLeft: 12,
     fontSize: 14,
-    color: '#2d3748'
+    color: '#2563eb'
   }
 })
 
