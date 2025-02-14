@@ -5,60 +5,106 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  FlatList,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { ROLES } from "../../auth/role";
 import ServerUrl from "../../config/ServerUrl";
+import DataCard from "../../utils/DataCard";
+import DetailModal from "../../utils/DetailModal";
+import ConfirmationModal from "../../utils/ConfirmationModal";
+import DetailHeader from "../../utils/DetailHeader";
+import ItemDetailCard from "../../utils/ItemDetailCard";
+
 
 const GRNReturnGeneralData = ({ navigation }) => {
   const [data, setData] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedGRNReturn, setSelectedGRNReturn] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(8);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedGRNReturn, setSelectedGRNReturn] = useState(null);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const userRole = useSelector((state) => state?.auth?.user?.role);
 
-  const fetchData = async () => {
+  const fetchData = async (page, limit) => {
     setLoading(true);
     const token = await SecureStore.getItemAsync("token");
     try {
       const response = await axios.get(
-        `${ServerUrl}/grnReturnGeneral/get-grn-returns`,
+        `${ServerUrl}/grnReturnGeneral/get-grn-returns?page=${page}&limit=${limit}`,
         {
-         
-          headers:{
-            Authorization: `Bearer ${token}`
-          }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-      setData(response.data);
-      console.log(response.data);
+      return response.data.data || [];
     } catch (error) {
-      console.error(
-        "Error fetching data:",
-        error.response ? error.response.data : error.message
-      );
+      console.error("Error fetching data:", error.response ? error.response.data : error.message);
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loadInitial = async () => {
+    setLoading(true);
+    try {
+      const initialData = await fetchData(1, limit);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+    } catch (error) {
+      console.error(error);
+      setData([]);
+      Alert.alert("Error", "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const onRefresh = useCallback(() => {
+  const handleLoadMore = async () => {
+    if (!hasMore || isFetchingMore) return;
+    setIsFetchingMore(true);
+
+    try {
+      const nextPage = page + 1;
+      const nextPageData = await fetchData(nextPage, limit);
+      setData((prev) => [...prev, ...nextPageData]);
+      setPage(nextPage);
+      setHasMore(nextPageData.length >= limit);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchData().then(() => setRefreshing(false));
+    setPage(1);
+    try {
+      const initialData = await fetchData(1, limit);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInitial();
   }, []);
 
   const handleDelete = async () => {
@@ -67,25 +113,18 @@ const GRNReturnGeneralData = ({ navigation }) => {
       await axios.delete(
         `${ServerUrl}/grnReturnGeneral/delete-grn-return-general`,
         {
-        
           data: { id: deleteId },
-          headers:{
-            Authorization: `Bearer ${token}`
-          }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       Alert.alert("Success", "GRN Return deleted successfully.");
       fetchData();
     } catch (error) {
-      console.error(
-        "Error deleting GRN Return:",
-        error.response ? error.response.data : error.message
-      );
-      Alert.alert(
-        "Error",
-        error.response ? error.response.data.message : "Something went wrong."
-      );
+      console.error("Error deleting GRN Return:", error.response ? error.response.data : error.message);
+      Alert.alert("Error", error.response ? error.response.data.message : "Something went wrong.");
     } finally {
       setConfirmVisible(false);
     }
@@ -115,13 +154,46 @@ const GRNReturnGeneralData = ({ navigation }) => {
     setSelectedGRNReturn(null);
   };
 
+  const renderItem = ({ item, index }) => (
+    <DataCard
+      item={item}
+      titleKey="grnrNumber"
+      subtitleKey="grnrDate"
+      fields={[
+        { label: 'GRN Number', key: 'grnNumber' },
+        { label: 'GRN Date', key: 'grnDate' },
+        { label: 'Remarks', key: 'remarks' },
+      ]}
+      actions={
+        userRole !== ROLES.VIEW_ONLY
+          ? [
+              {
+                label: 'Show',
+                handler: handleShow,
+                style: { backgroundColor: '#3182ce' },
+              },
+              {
+                label: 'Edit',
+                handler: handleEdit,
+                style: { backgroundColor: '#2b6cb0' },
+              },
+              {
+                label: 'Delete',
+                handler: confirmDelete,
+                style: { backgroundColor: '#e53e3e' },
+              },
+            ]
+          : []
+      }
+      onPress={() => handleShow(item)}
+    />
+  );
+
   return (
     <View style={styles.container}>
       {userRole !== ROLES.VIEW_ONLY && (
         <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("GRNReturnGeneral")}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate("GRNReturnGeneral")}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.header}>GRN Return General Data</Text>
@@ -131,193 +203,84 @@ const GRNReturnGeneralData = ({ navigation }) => {
       {loading ? (
         <ActivityIndicator size="large" color="#1b1f26" />
       ) : (
-        <ScrollView
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item) => item._id}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-        >
-          {data.map((item, index) => (
-            <View key={item._id} style={styles.dataRow}>
-              <Text>
-                S.No: <Text style={styles.boldText}>{index + 1}</Text>
+          onEndReached={hasMore ? handleLoadMore : undefined}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() => (
+            <ActivityIndicator
+              style={{ marginVertical: 20 }}
+              size="large"
+              color="#1b1f26"
+              animating={isFetchingMore}
+            />
+          )}
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: 'center', color: '#666' }}>
+                No GRN Returns found
               </Text>
-              <Text>
-                GRNR Number:{" "}
-                <Text style={styles.boldText}>{item.grnrNumber}</Text>
-              </Text>
-              <Text>
-                GRNR Date: <Text style={styles.boldText}>{item.grnrDate}</Text>
-              </Text>
-              <Text>
-                GRN Number:{" "}
-                <Text style={styles.boldText}>{item.grnNumber}</Text>
-              </Text>
-              <Text>
-                GRN Date: <Text style={styles.boldText}>{item.grnDate}</Text>
-              </Text>
-              <Text>
-                Remarks: <Text style={styles.boldText}>{item.remarks}</Text>
-              </Text>
-              <View style={styles.dataButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleShow(item)}
-                >
-                  <Text style={styles.actionButtonText}>Show</Text>
-                </TouchableOpacity>
-                {userRole !== ROLES.VIEW_ONLY && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleEdit(item)}
-                    >
-                      <Text style={styles.actionButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => confirmDelete(item._id)}
-                    >
-                      <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+            )
+          }
+        />
       )}
 
       {selectedGRNReturn && (
-        <Modal
-          animationType="slide"
-          transparent={true}
+        <DetailModal
           visible={modalVisible}
-          onRequestClose={closeModal}
+          onClose={closeModal}
+          title="GRN Return Details"
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView>
-                <Text style={styles.modalHeader}>GRN Return Details</Text>
-                <View style={styles.modalFieldsContainer}>
-                  <Text style={styles.modalText}>
-                    GRNR Number:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRNReturn.grnrNumber}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    GRNR Date:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRNReturn.grnrDate}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    GRN Number:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRNReturn.grnNumber}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    GRN Date:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRNReturn.grnDate}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Remarks:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRNReturn.remarks}
-                    </Text>
-                  </Text>
-                  {selectedGRNReturn.rows.map((row, index) => (
-                    <View key={index}>
-                      <View style={styles.row}>
-                        <Text style={styles.modalText}>
-                          Action:{" "}
-                          <Text style={styles.boldText}>{row.action}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          S.No:{" "}
-                          <Text style={styles.boldText}>{row.serialNo}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Category:{" "}
-                          <Text style={styles.boldText}>{row.category}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Item Name:{" "}
-                          <Text style={styles.boldText}>{row.name}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Unit: <Text style={styles.boldText}>{row.unit}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          GRN Qty:{" "}
-                          <Text style={styles.boldText}>{row.grnQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Previous Return Qty:{" "}
-                          <Text style={styles.boldText}>
-                            {row.previousReturnQty}
-                          </Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Balance GRN Qty:{" "}
-                          <Text style={styles.boldText}>
-                            {row.balanceGrnQty}
-                          </Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Return Qty:{" "}
-                          <Text style={styles.boldText}>{row.returnQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Row Remarks:{" "}
-                          <Text style={styles.boldText}>{row.rowRemarks}</Text>
-                        </Text>
-                      </View>
-                      <View style={styles.separator} />
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity style={styles.button} onPress={closeModal}>
-                  <Text style={styles.buttonText}>Close</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+          <DetailHeader
+            title="GRNR Number"
+            value={selectedGRNReturn.grnrNumber || 'N/A'}
+          />
+          <DetailHeader
+            title="GRNR Date"
+            value={selectedGRNReturn.grnrDate}
+          />
+          <DetailHeader
+            title="GRN Number"
+            value={selectedGRNReturn.grnNumber}
+          />
+          <DetailHeader
+            title="GRN Date"
+            value={selectedGRNReturn.grnDate}
+          />
+          <DetailHeader title="Remarks" value={selectedGRNReturn.remarks} />
+          {selectedGRNReturn.rows.map((row, index) => (
+            <ItemDetailCard
+              key={index}
+              title={`Row ${index + 1}`}
+              fields={[
+                { label: 'Action', value: row.action },
+                { label: 'Serial No', value: row.serialNo },
+                { label: 'Category', value: row.category },
+                { label: 'Item Name', value: row.name },
+                { label: 'Unit', value: row.unit },
+                { label: 'GRN Qty', value: row.grnQty },
+                { label: 'Previous Return Qty', value: row.previousReturnQty },
+                { label: 'Balance GRN Qty', value: row.balanceGrnQty },
+                { label: 'Return Qty', value: row.returnQty },
+                { label: 'Row Remarks', value: row.rowRemarks },
+              ]}
+            />
+          ))}
+        </DetailModal>
       )}
 
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <ConfirmationModal
         visible={confirmVisible}
-        onRequestClose={closeConfirmModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Confirm Delete</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to delete this item?
-            </Text>
-            <View style={styles.dataButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={closeConfirmModal}
-              >
-                <Text style={styles.actionButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={handleDelete}
-              >
-                <Text style={styles.actionButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onCancel={closeConfirmModal}
+        onConfirm={handleDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this item?"
+      />
     </View>
   );
 };
@@ -337,86 +300,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginLeft: 10,
-  },
-  dataRow: {
-    marginBottom: 15,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 20,
-  },
-  dataButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  actionButton: {
-    backgroundColor: "#1b1f26",
-    padding: 5,
-    borderRadius: 15,
-    alignItems: "center",
-    marginHorizontal: 5,
-    flex: 1,
-  },
-  actionButtonText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 20,
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  modalFieldsContainer: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  boldText: {
-    fontWeight: "bold",
-  },
-  row: {
-    marginBottom: 10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#ccc",
-    marginVertical: 10,
-  },
-  button: {
-    backgroundColor: "#1b1f26",
-    padding: 15,
-    borderRadius: 20,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  cancelButton: {
-    backgroundColor: "#ccc",
-  },
-  deleteButton: {
-    backgroundColor: "red",
   },
 });
 

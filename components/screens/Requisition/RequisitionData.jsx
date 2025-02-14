@@ -1,412 +1,261 @@
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
-  TouchableOpacity,
-  View
-} from "react-native";
-import { useSelector } from "react-redux";
-import { ROLES } from "../../auth/role";
-import ServerUrl from "../../config/ServerUrl";
-const RequisitionData = ({ navigation }) => {
-  const [data, setData] = useState([]);
+  FlatList,
+  ActivityIndicator,
+  StyleSheet
+} from 'react-native'
+import { useSelector } from 'react-redux'
+import { Ionicons } from '@expo/vector-icons'
+import axios from 'axios'
+import * as SecureStore from 'expo-secure-store'
+import { format } from 'date-fns'
+import ServerUrl from '../../config/ServerUrl'
+import DataCard from '../../utils/DataCard'
+import DetailModal from '../../utils/DetailModal'
+import ConfirmationModal from '../../utils/ConfirmationModal'
+import { ROLES } from '../../auth/role'
+import ItemDetailCard from '../../utils/ItemDetailCard'
+import DetailHeader from '../../utils/DetailHeader'
 
-  const [page, setPage] = useState(1);
-  const [isFetching, setIsFetching] = useState(false);
-  const [totalPages, setTotalPages] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedRequisition, setSelectedRequisition] = useState(null);
-  const [serverMessage, setServerMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const userRole = useSelector((state) => state?.auth?.user?.role);
+const RequisitionData = ({ navigation }) => {
+  const [data, setData] = useState([])
+  const [page, setPage] = useState(1)
+  const [isFetching, setIsFetching] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedRequisition, setSelectedRequisition] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [confirmVisible, setConfirmVisible] = useState(false)
+  const [deleteId, setDeleteId] = useState(null)
+  const userRole = useSelector(state => state?.auth?.user?.role)
 
   const fetchData = async (pageNumber = 1) => {
     try {
-      const token = await SecureStore.getItemAsync("token");
-
+      const token = await SecureStore.getItemAsync('token')
       if (token) {
-        setIsFetching(true);
+        setIsFetching(true)
         const response = await axios.get(
           `${ServerUrl}/requisition/showRequisition`,
           {
-            params: {
-              page: pageNumber,
-              limit: 10,
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            params: { page: pageNumber, limit: 10 },
+            headers: { Authorization: `Bearer ${token}` }
           }
-        );
+        )
 
-        const { data: newData, totalPages: fetchedTotalPages } = response.data;
-
-        setData((prevData) =>
+        const { data: newData, totalPages: fetchedTotalPages } = response.data
+        setData(prevData =>
           pageNumber === 1 ? newData : [...prevData, ...newData]
-        );
-        setTotalPages(fetchedTotalPages);
+        )
+        setTotalPages(fetchedTotalPages)
       }
     } catch (error) {
       console.error(
-        "Error fetching data:",
+        'Error fetching data:',
         error.response ? error.response.data : error.message
-      );
+      )
     } finally {
-      setLoading(false);
-      setIsFetching(false);
+      setLoading(false)
+      setIsFetching(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchData(1);
-  }, []);
+    fetchData(1)
+  }, [])
 
   const handleLoadMore = () => {
     if (page < totalPages && !isFetching) {
-      setPage((prevPage) => prevPage + 1);
-      fetchData(page + 1);
+      setPage(prev => prev + 1)
+      fetchData(page + 1)
     }
-  };
-  const handleDelete = async (id) => {
-    const token = await SecureStore.getItemAsync("token");
+  }
+
+  const handleDelete = async id => {
+    const token = await SecureStore.getItemAsync('token')
     try {
-      const response = await axios.delete(
-        `${ServerUrl}/requisition/deleteRequisition`,
-        {
-          data: {
-            requisitionId: id,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(response.data);
-      setServerMessage(response.data.message);
-      setData(data.filter((item) => item._id !== id));
+      await axios.delete(`${ServerUrl}/requisition/deleteRequisition`, {
+        data: { requisitionId: id },
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setData(data.filter(item => item._id !== id))
+      setConfirmVisible(false)
     } catch (error) {
-      console.error(
-        "Error deleting requisition:",
-        error.response ? error.response.data : error.message
-      );
-    } finally {
-      setConfirmVisible(false);
+      console.error('Delete error:', error.response?.data || error.message)
     }
-  };
+  }
 
-  const confirmDelete = (id) => {
-    setDeleteId(id);
-    setConfirmVisible(true);
-  };
-
-  const handleShow = (requisition) => {
-    setSelectedRequisition(requisition);
-    setModalVisible(true);
-  };
-
-  const handleEdit = (requisition) => {
-    navigation.navigate("RequisitionEdit", { requisition });
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedRequisition(null);
-  };
-
-  const closeConfirmModal = () => {
-    setConfirmVisible(false);
-    setDeleteId(null);
-  };
-  const renderItem = ({ item }) => (
-    <View style={styles.dataRow}>
-      <Text>
-        DR #: <Text style={styles.boldText}>{item.drNumber}</Text>
-      </Text>
-      <Text>
-        Department: <Text style={styles.boldText}>{item.department}</Text>
-      </Text>
-      <View style={styles.dataButtons}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleShow(item)}
-        >
-          <Text style={styles.actionButtonText}>Show</Text>
-        </TouchableOpacity>
-        {userRole !== ROLES.VIEW_ONLY && (
-          <>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleEdit(item)}
-            >
-              <Text style={styles.actionButtonText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => confirmDelete(item._id)}
-            >
-              <Text style={styles.actionButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
-  );
+  const formatDate = dateString => {
+    const date = new Date(dateString)
+    return format(date, 'dd-MM-yyyy')
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        {userRole !== ROLES.VIEW_ONLY && (
-          <>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("RequisitionGeneral")}
-            >
-              <Ionicons name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-
-            <Text style={styles.header}>Requisition Data</Text>
-          </>
-        )}
+      <View style={styles.header}>
+        <Ionicons
+          name='arrow-back'
+          size={24}
+          color='#fff'
+          onPress={() => navigation.goBack()}
+        />
+        <Text style={styles.headerTitle}>Requisition Data</Text>
       </View>
-      {serverMessage ? (
-        <View style={styles.messageContainer}>
-          <Text style={styles.messageText}>{serverMessage}</Text>
-        </View>
-      ) : null}
+
       {loading ? (
-        <ActivityIndicator size="large" color="#1b1f26" />
+        <ActivityIndicator size='large' color='#2b6cb0' />
       ) : (
         <FlatList
           data={data}
-          renderItem={renderItem}
+          renderItem={({ item }) => (
+            <DataCard
+              item={item}
+              titleKey='drNumber'
+              subtitleKey='department'
+              fields={[
+                { label: 'Date', key: 'date', format: formatDate }, // Add any additional fields
+                { label: 'Requisition Type', key: 'requisitionType' }
+              ]}
+              actions={
+                userRole !== ROLES.VIEW_ONLY
+                  ? [
+                      {
+                        label: 'Show',
+                        handler: item => {
+                          setSelectedRequisition(item)
+                          setModalVisible(true)
+                        },
+                        style: { backgroundColor: '#3182ce' }
+                      },
+                      {
+                        label: 'Edit',
+                        handler: item =>
+                          navigation.navigate('RequisitionEdit', {
+                            requisition: item
+                          }),
+                        style: { backgroundColor: '#2b6cb0' }
+                      },
+                      {
+                        label: 'Delete',
+                        handler: item => {
+                          setDeleteId(item._id)
+                          setConfirmVisible(true)
+                        },
+                        style: { backgroundColor: '#e53e3e' }
+                      }
+                    ]
+                  : []
+              }
+              style={styles.dataCard}
+              onPress={() => {
+                setSelectedRequisition(item)
+                setModalVisible(true)
+              }}
+            />
+          )}
           keyExtractor={(item, index) => item._id || index.toString()}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            isFetching ? (
-              <ActivityIndicator size="small" color="#1b1f26" />
-            ) : null
+            isFetching && <ActivityIndicator size='small' color='#2b6cb0' />
           }
         />
       )}
 
-      {selectedRequisition && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView>
-                <Text style={styles.modalHeader}>Requisition Details</Text>
-                <View style={styles.modalFieldsContainer}>
-                  <Text style={styles.modalText}>
-                    DR #:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedRequisition.drNumber}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Department:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedRequisition.department}
-                    </Text>
-                  </Text>
-                  {selectedRequisition.items.map((row, index) => (
-                    <View key={index}>
-                      <View style={styles.row}>
-                        <Text style={styles.modalText}>
-                          Item Category:{" "}
-                          <Text style={styles.boldText}>
-                            {row.level3ItemCategory}
-                          </Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Item Name:{" "}
-                          <Text style={styles.boldText}>{row.itemName}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          UOM: <Text style={styles.boldText}>{row.uom}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Quantity:{" "}
-                          <Text style={styles.boldText}>{row.quantity}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Rate: <Text style={styles.boldText}>{row.rate}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Amount:{" "}
-                          <Text style={styles.boldText}>{row.amount}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Remarks:{" "}
-                          <Text style={styles.boldText}>{row.remarks}</Text>
-                        </Text>
-                      </View>
-                      <View style={styles.separator} />
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity style={styles.button} onPress={closeModal}>
-                  <Text style={styles.buttonText}>Close</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={confirmVisible}
-        onRequestClose={closeConfirmModal}
+      <DetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title='Requisition Details'
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Confirm Delete</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to delete this requisition?
-            </Text>
-            <View style={styles.dataButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={closeConfirmModal}
-              >
-                <Text style={styles.actionButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => handleDelete(deleteId)}
-              >
-                <Text style={styles.actionButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        {selectedRequisition && (
+          <>
+            <DetailHeader
+              title='DR Number'
+              value={selectedRequisition.drNumber || 'N/A'}
+            />
+
+            <DetailHeader
+              title='Department'
+              value={
+                selectedRequisition.department || 'No department specified'
+              }
+            />
+
+            <DetailHeader
+              title='Date'
+              value={selectedRequisition.date}
+              formatValue={formatDate}
+            />
+            <DetailHeader
+              title='Requisition Type'
+              value={selectedRequisition.requisitionType}
+            />
+
+            {selectedRequisition.items?.map((item, index) => (
+              <ItemDetailCard
+                key={index}
+                title={item.itemName}
+                fields={[
+                  { label: 'Category', value: item.level3ItemCategory },
+                  { label: 'Quantity', value: `${item.quantity} ${item.uom}` },
+                  { label: 'Rate', value: `Rs.${item.rate}` },
+                  { label: 'Total', value: `Rs.${item.amount}` },
+                  { label: 'Remarks', value: item.remarks }
+                ]}
+              />
+            ))}
+          </>
+        )}
+      </DetailModal>
+
+      <ConfirmationModal
+        visible={confirmVisible}
+        onCancel={() => setConfirmVisible(false)}
+        onConfirm={() => handleDelete(deleteId)}
+        title='Confirm Delete'
+        message='Are you sure you want to delete this requisition?'
+      />
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 10, // Add padding to the top
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
+    padding: 15,
+    backgroundColor: '#f7fafc'
   },
   header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginLeft: 10,
-  },
-  messageContainer: {
-    padding: 10,
-    backgroundColor: "#d4edda",
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  messageText: {
-    color: "#155724",
-    fontSize: 16,
-  },
-  dataRow: {
-    marginBottom: 15,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 20,
-  },
-  dataButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  actionButton: {
-    backgroundColor: "#1b1f26",
-    padding: 5,
-    borderRadius: 15,
-    alignItems: "center",
-    marginHorizontal: 5,
-    flex: 1,
-  },
-  cancelButton: {
-    backgroundColor: "#1b1f26",
-  },
-  deleteButton: {
-    backgroundColor: "#1b1f26",
-  },
-  actionButtonText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 20,
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  modalFieldsContainer: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  boldText: {
-    fontWeight: "bold",
-  },
-  row: {
-    marginBottom: 10,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#ccc",
-    marginVertical: 10,
-  },
-  button: {
-    backgroundColor: "#1b1f26",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2b6cb0',
     padding: 15,
-    borderRadius: 20,
-    alignItems: "center",
-    marginTop: 20,
+    borderRadius: 8,
+    marginBottom: 15
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 15
   },
-});
+  dataCard: {
+    marginHorizontal: 10,
+    marginBottom: 15
+  },
+  itemCard: {
+    marginHorizontal: 5,
+    marginVertical: 8
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#718096'
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#2d3748'
+  }
+})
 
-export default RequisitionData;
+export default RequisitionData

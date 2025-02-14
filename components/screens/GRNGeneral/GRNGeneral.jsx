@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
@@ -8,26 +7,14 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import FormFields from "../../common/FormFields";
 import FormRows from "../../common/FormRows";
 import ServerUrl from "../../config/ServerUrl";
 import ReusableModal from "../../utils/ReusableModal";
 import ReusableButton from "../../utils/reusableButton";
-import FormFields from "../../common/FormFields";
 
 const GRNGeneral = ({ navigation }) => {
-  const formatDate = (isoDate) => {
-    if (!isoDate) return "";
-    const date = new Date(isoDate);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const parseDate = (dateStr) => {
-    const [day, month, year] = dateStr.split("-");
-    return new Date(`${year}-${month}-${day}`).toISOString();
-  };
+ 
 
   const [formValues, setFormValues] = useState({
     grnNumber: "",
@@ -141,7 +128,7 @@ const GRNGeneral = ({ navigation }) => {
       !formValues.inwardNumber ||
       !formValues.inwardDate ||
       rows.some(row => 
-        !row.poNo ||
+        
         !row.department ||
         !row.category ||
         !row.name ||

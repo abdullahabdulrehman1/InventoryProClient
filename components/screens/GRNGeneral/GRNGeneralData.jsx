@@ -1,194 +1,202 @@
-import { Ionicons } from "@expo/vector-icons";
-import { CommonActions } from "@react-navigation/native";
-import axios from "axios";
-import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useState } from "react";
+import { Ionicons } from '@expo/vector-icons'
+import { CommonActions } from '@react-navigation/native'
+import axios from 'axios'
+import * as SecureStore from 'expo-secure-store'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Modal,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-} from "react-native";
-import { useSelector } from "react-redux";
-import { ROLES } from "../../auth/role";
-import ServerUrl from "../../config/ServerUrl";
+  View
+} from 'react-native'
+import { useSelector } from 'react-redux'
+import { ROLES } from '../../auth/role'
+import ServerUrl from '../../config/ServerUrl'
+import DataCard from '../../utils/DataCard'
+import DetailModal from '../../utils/DetailModal'
+import ConfirmationModal from '../../utils/ConfirmationModal'
+import ItemDetailCard from '../../utils/ItemDetailCard'
+import DetailHeader from '../../utils/DetailHeader'
+import { format } from 'date-fns'
 
 const GRNGeneralData = ({ navigation }) => {
-  const [data, setData] = useState([]);
-  const [page, setPage] = useState(1);
-  const [isFetching, setIsFetching] = useState(false);
-  const [totalPages, setTotalPages] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedGRN, setSelectedGRN] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const userRole = useSelector((state) => state?.auth?.user?.role);
+  const formatDate = dateString => {
+    const date = new Date(dateString)
+    return format(date, 'dd-MM-yyyy')
+  }
+  const [data, setData] = useState([])
+  const [page, setPage] = useState(1)
+  const [isFetching, setIsFetching] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedGRN, setSelectedGRN] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [confirmVisible, setConfirmVisible] = useState(false)
+  const [deleteId, setDeleteId] = useState(null)
+  const userRole = useSelector(state => state?.auth?.user?.role)
 
   const fetchData = async (pageNumber = 1) => {
     try {
-      const token = await SecureStore.getItemAsync("token");
+      const token = await SecureStore.getItemAsync('token')
 
       if (token) {
-        setIsFetching(true);
+        setIsFetching(true)
         const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
           params: {
             page: pageNumber,
-            limit: 8,
+            limit: 8
           },
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+            Authorization: `Bearer ${token}`
+          }
+        })
 
-        const { data: newData, totalPages: fetchedTotalPages } = response.data;
+        const { data: newData, totalPages: fetchedTotalPages } = response.data
 
-        setData((prevData) =>
+        setData(prevData =>
           pageNumber === 1 ? newData : [...prevData, ...newData]
-        );
-        setTotalPages(fetchedTotalPages);
+        )
+        setTotalPages(fetchedTotalPages)
       }
     } catch (error) {
       console.error(
-        "Error fetching data:",
+        'Error fetching data:',
         error.response ? error.response.data : error.message
-      );
+      )
     } finally {
-      setLoading(false);
-      setIsFetching(false);
+      setLoading(false)
+      setIsFetching(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchData(1);
-  }, []);
+    fetchData(1)
+  }, [])
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchData(1).then(() => setRefreshing(false));
-  }, []);
+    setRefreshing(true)
+    fetchData(1).then(() => setRefreshing(false))
+  }, [])
 
   const handleLoadMore = () => {
     if (page < totalPages && !isFetching) {
-      setPage((prevPage) => prevPage + 1);
-      fetchData(page + 1);
+      setPage(prevPage => prevPage + 1)
+      fetchData(page + 1)
     }
-  };
+  }
 
-  const handleDelete = async (grnId) => {
-    const token = await SecureStore.getItemAsync("token");
+  const handleDelete = async grnId => {
+    const token = await SecureStore.getItemAsync('token')
     try {
       const response = await axios.delete(
         `${ServerUrl}/grnGeneral/delete-grn/${grnId}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         }
-      );
-      console.log(response.data);
-      setData(data.filter((item) => item._id !== grnId));
-      Alert.alert("Success", "GRN deleted successfully.");
+      )
+      console.log(response.data)
+      setData(data.filter(item => item._id !== grnId))
+      Alert.alert('Success', 'GRN deleted successfully.')
     } catch (error) {
       console.error(
-        "Error deleting GRN:",
+        'Error deleting GRN:',
         error.response ? error.response.data : error.message
-      );
+      )
       Alert.alert(
-        "Error",
-        error.response ? error.response.data.message : "Something went wrong."
-      );
+        'Error',
+        error.response ? error.response.data.message : 'Something went wrong.'
+      )
     } finally {
-      setConfirmVisible(false);
+      setConfirmVisible(false)
     }
-  };
+  }
 
-  const confirmDelete = (id) => {
-    setDeleteId(id);
-    setConfirmVisible(true);
-  };
+  const confirmDelete = id => {
+    setDeleteId(id)
+    setConfirmVisible(true)
+  }
 
-  const handleEdit = (grn) => {
+  const handleEdit = grn => {
     navigation.dispatch(
       CommonActions.reset({
         index: 1,
         routes: [
-          { name: "GRNGeneral" },
-          { name: "GRNGeneralEdit", params: { grn } },
-        ],
+          { name: 'GRNGeneral' },
+          { name: 'GRNGeneralEdit', params: { grn } }
+        ]
       })
-    );
-  };
+    )
+  }
 
-  const handleShow = (grn) => {
-    setSelectedGRN(grn);
-    setModalVisible(true);
-  };
+  const handleShow = grn => {
+    setSelectedGRN(grn)
+    setModalVisible(true)
+  }
 
   const closeModal = () => {
-    setModalVisible(false);
-    setSelectedGRN(null);
-  };
+    setModalVisible(false)
+    setSelectedGRN(null)
+  }
 
   const closeConfirmModal = () => {
-    setConfirmVisible(false);
-    setDeleteId(null);
-  };
+    setConfirmVisible(false)
+    setDeleteId(null)
+  }
 
   const renderItem = ({ item, index }) => (
-    <View key={item._id} style={styles.dataRow}>
-      <Text>
-        S.No: <Text style={styles.boldText}>{index + 1}</Text>
-      </Text>
-      <Text>
-        GRN Number: <Text style={styles.boldText}>{item.grnNumber}</Text>
-      </Text>
-      <View style={styles.dataButtons}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleShow(item)}
-        >
-          <Text style={styles.actionButtonText}>Show</Text>
-        </TouchableOpacity>
-        {userRole !== ROLES.VIEW_ONLY && (
-          <>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleEdit(item)}
-            >
-              <Text style={styles.actionButtonText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => confirmDelete(item._id)}
-            >
-              <Text style={styles.actionButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
-  );
+    <DataCard
+      item={item}
+      titleKey='grnNumber'
+      subtitleKey='supplier'
+      fields={[
+        { label: 'Date', key: 'date' },
+        { label: 'Inward Number', key: 'inwardNumber' },
+        { label: 'Remarks', key: 'remarks' }
+      ]}
+      actions={
+        userRole !== ROLES.VIEW_ONLY
+          ? [
+              {
+                label: 'Show',
+                handler: item => handleShow(item),
+                style: { backgroundColor: '#3182ce' }
+              },
+              {
+                label: 'Edit',
+                handler: item => handleEdit(item),
+                style: { backgroundColor: '#2b6cb0' }
+              },
+              {
+                label: 'Delete',
+                handler: item => confirmDelete(item._id),
+                style: { backgroundColor: '#e53e3e' }
+              }
+            ]
+          : []
+      }
+      style={styles.dataCard}
+      onPress={() => handleShow(item)}
+    />
+  )
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate("GRNGeneral")}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate('GRNGeneral')}>
+          <Ionicons name='arrow-back' size={24} color='black' />
         </TouchableOpacity>
         <Text style={styles.header}>GRN General Data</Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1b1f26" />
+        <ActivityIndicator size='large' color='#1b1f26' />
       ) : (
         <FlatList
           data={data}
@@ -200,259 +208,183 @@ const GRNGeneralData = ({ navigation }) => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListFooterComponent={
-            isFetching ? <ActivityIndicator size="small" color="#1b1f26" /> : null
+            isFetching ? (
+              <ActivityIndicator size='small' color='#1b1f26' />
+            ) : null
           }
         />
       )}
 
-      {selectedGRN && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView>
-                <Text style={styles.modalHeader}>GRN Details</Text>
-                <View style={styles.modalFieldsContainer}>
-                  <Text style={styles.modalText}>
-                    GRN Number:{" "}
-                    <Text style={styles.boldText}>{selectedGRN.grnNumber}</Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Date:{" "}
-                    <Text style={styles.boldText}>
-                      {new Date(selectedGRN.date).toLocaleDateString()}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Supplier Challan Number:{" "}
-                    <Text style={styles.boldText}>
-                      {selectedGRN.supplierChallanNumber}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Supplier Challan Date:{" "}
-                    <Text style={styles.boldText}>
-                      {new Date(selectedGRN.supplierChallanDate).toLocaleDateString()}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Supplier:{" "}
-                    <Text style={styles.boldText}>{selectedGRN.supplier}</Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Inward Number:{" "}
-                    <Text style={styles.boldText}>{selectedGRN.inwardNumber}</Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Inward Date:{" "}
-                    <Text style={styles.boldText}>
-                      {new Date(selectedGRN.inwardDate).toLocaleDateString()}
-                    </Text>
-                  </Text>
-                  <Text style={styles.modalText}>
-                    Remarks:{" "}
-                    <Text style={styles.boldText}>{selectedGRN.remarks}</Text>
-                  </Text>
-                  {selectedGRN.rows.map((row, index) => (
-                    <View key={index}>
-                      <View style={styles.row}>
-                        <Text style={styles.modalText}>
-                          PO No: <Text style={styles.boldText}>{row.poNo}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Department:{" "}
-                          <Text style={styles.boldText}>{row.department}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Category:{" "}
-                          <Text style={styles.boldText}>{row.category}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Item Name:{" "}
-                          <Text style={styles.boldText}>{row.name}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Unit: <Text style={styles.boldText}>{row.unit}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          PO Quantity:{" "}
-                          <Text style={styles.boldText}>{row.poQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Previous Quantity:{" "}
-                          <Text style={styles.boldText}>{row.previousQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Balance PO Quantity:{" "}
-                          <Text style={styles.boldText}>{row.balancePoQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Received Quantity:{" "}
-                          <Text style={styles.boldText}>{row.receivedQty}</Text>
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Remarks:{" "}
-                          <Text style={styles.boldText}>{row.rowRemarks}</Text>
-                        </Text>
-                      </View>
-                      <View style={styles.separator} />
-                    </View>
-                  ))}
-                </View>
-                <TouchableOpacity style={styles.button} onPress={closeModal}>
-                  <Text style={styles.buttonText}>Close</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={confirmVisible}
-        onRequestClose={closeConfirmModal}
+      <DetailModal
+        visible={modalVisible}
+        onClose={closeModal}
+        title='GRN Details'
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Confirm Delete</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to delete this GRN?
-            </Text>
-            <View style={styles.dataButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={closeConfirmModal}
-              >
-                <Text style={styles.actionButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => handleDelete(deleteId)}
-              >
-                <Text style={styles.actionButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        {selectedGRN && (
+          <>
+            <DetailHeader
+              title='GRN Number'
+              value={selectedGRN.grnNumber || 'N/A'}
+            />
+            <DetailHeader
+              title='Date'
+              formatValue={formatDate}
+              value={selectedGRN.date}
+            />
+            <DetailHeader
+              title='Supplier Challan Number'
+              value={selectedGRN.supplierChallanNumber}
+            />
+            <DetailHeader
+              formatValue={formatDate}
+              title='Supplier Challan Date'
+              value={selectedGRN.supplierChallanDate}
+            />
+            <DetailHeader title='Supplier' value={selectedGRN.supplier} />
+            <DetailHeader
+              title='Inward Number'
+              value={selectedGRN.inwardNumber}
+            />
+            <DetailHeader title='Inward Date' value={selectedGRN.inwardDate} />
+            <DetailHeader title='Remarks' value={selectedGRN.remarks} />
+            {selectedGRN.rows.map((row, index) => (
+              <ItemDetailCard
+                key={index}
+                title={row.name}
+                fields={[
+                  { label: 'PO No', value: row.poNo },
+                  { label: 'Department', value: row.department },
+                  { label: 'Category', value: row.category },
+                  { label: 'Unit', value: row.unit },
+                  { label: 'PO Quantity', value: row.poQty },
+                  { label: 'Previous Quantity', value: row.previousQty },
+                  { label: 'Balance PO Quantity', value: row.balancePoQty },
+                  { label: 'Received Quantity', value: row.receivedQty },
+                  { label: 'Remarks', value: row.rowRemarks }
+                ]}
+              />
+            ))}
+          </>
+        )}
+      </DetailModal>
+
+      <ConfirmationModal
+        visible={confirmVisible}
+        onCancel={closeConfirmModal}
+        onConfirm={() => handleDelete(deleteId)}
+        title='Confirm Delete'
+        message='Are you sure you want to delete this GRN?'
+      />
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingTop: 10,
+    paddingTop: 10
   },
   headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10
   },
   header: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginLeft: 10,
+    fontWeight: 'bold',
+    marginLeft: 10
   },
-  dataRow: {
-    marginBottom: 15,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 20,
+  dataCard: {
+    marginHorizontal: 10,
+    marginBottom: 15
   },
-  dataButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
+  itemCard: {
+    marginHorizontal: 5,
+    marginVertical: 8
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#718096'
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#2d3748'
   },
   actionButton: {
-    backgroundColor: "#1b1f26",
+    backgroundColor: '#1b1f26',
     padding: 5,
     borderRadius: 15,
-    alignItems: "center",
+    alignItems: 'center',
     marginHorizontal: 5,
-    flex: 1,
-  },
-  cancelButton: {
-    backgroundColor: "#1b1f26",
-  },
-  deleteButton: {
-    backgroundColor: "#1b1f26",
+    flex: 1
   },
   actionButtonText: {
-    color: "#fff",
-    fontSize: 12,
+    color: '#fff',
+    fontSize: 12
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)'
   },
   modalContent: {
-    width: "90%",
-    backgroundColor: "white",
+    width: '90%',
+    backgroundColor: 'white',
     padding: 20,
-    borderRadius: 20,
+    borderRadius: 20
   },
   modalHeader: {
     fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontWeight: 'bold',
+    marginBottom: 20
   },
   modalFieldsContainer: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 10,
     padding: 10,
-    marginBottom: 20,
+    marginBottom: 20
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 10,
+    marginBottom: 10
   },
   boldText: {
-    fontWeight: "bold",
+    fontWeight: 'bold'
   },
   row: {
-    marginBottom: 10,
+    marginBottom: 10
   },
   separator: {
     height: 1,
-    backgroundColor: "#ccc",
-    marginVertical: 10,
+    backgroundColor: '#ccc',
+    marginVertical: 10
   },
   button: {
-    backgroundColor: "#1b1f26",
+    backgroundColor: '#1b1f26',
     padding: 15,
     borderRadius: 20,
-    alignItems: "center",
-    marginTop: 20,
+    alignItems: 'center',
+    marginTop: 20
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 16
   },
   noRecordText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 20,
     fontSize: 18,
-    color: "#888",
+    color: '#888'
   },
   errorText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 20,
     fontSize: 18,
-    color: "red",
-  },
-});
+    color: 'red'
+  }
+})
 
-export default GRNGeneralData;
+export default GRNGeneralData
