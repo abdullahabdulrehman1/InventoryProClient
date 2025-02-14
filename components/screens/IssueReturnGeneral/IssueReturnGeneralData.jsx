@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons'
-import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
-import React, { useCallback, useEffect, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,92 +11,125 @@ import {
   TouchableOpacity,
   View,
   FlatList
-} from 'react-native'
-import { useSelector } from 'react-redux'
-import { ROLES } from '../../auth/role'
-import ServerUrl from '../../config/ServerUrl'
-import DataCard from '../../utils/DataCard'
-import DetailModal from '../../utils/DetailModal'
-import ConfirmationModal from '../../utils/ConfirmationModal'
-import ItemDetailCard from '../../utils/ItemDetailCard'
-import DetailHeader from '../../utils/DetailHeader'
-import { format } from 'date-fns'
+} from 'react-native';
+import { useSelector } from 'react-redux';
+import { ROLES } from '../../auth/role';
+import ServerUrl from '../../config/ServerUrl';
+import DataCard from '../../utils/DataCard';
+import DetailModal from '../../utils/DetailModal';
+import ConfirmationModal from '../../utils/ConfirmationModal';
+import ItemDetailCard from '../../utils/ItemDetailCard';
+import DetailHeader from '../../utils/DetailHeader';
+import SearchBar from '../../utils/SearchBar';
+import { format } from 'date-fns';
 
 const formatDate = dateString => {
-  const date = new Date(dateString)
-  return format(date, 'dd-MM-yyyy')
-}
+  const date = new Date(dateString);
+  return format(date, 'dd-MM-yyyy');
+};
 
 const IssueReturnGeneralData = ({ navigation }) => {
-  const [data, setData] = useState([])
-  const [page, setPage] = useState(1)
-  const [limit] = useState(5)
-  const [hasMore, setHasMore] = useState(true)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedIssueReturn, setSelectedIssueReturn] = useState(null)
-  const [confirmVisible, setConfirmVisible] = useState(false)
-  const [deleteId, setDeleteId] = useState(null)
-  const userRole = useSelector(state => state?.auth?.user?.role)
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedIssueReturn, setSelectedIssueReturn] = useState(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const userRole = useSelector(state => state?.auth?.user?.role);
 
-  const fetchData = async (pageNumber = 1) => {
+  const fetchData = async (pageNumber = 1, searchQuery = '') => {
     try {
-      const token = await SecureStore.getItemAsync('token')
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) throw new Error('No token found');
 
-      if (token) {
-        setIsFetchingMore(true)
-        const response = await axios.get(
-          `${ServerUrl}/issueReturnGeneral/get-issue-return-general`,
-          {
-            params: {
-              page: pageNumber,
-              limit: limit
-            },
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        )
+      const endpoint = searchQuery
+        ? '/issueReturnGeneral/searchIssueReturnGeneral'
+        : '/issueReturnGeneral/get-issue-return-general';
 
-        const { data: newData } = response.data
+      const response = await axios.get(ServerUrl + endpoint, {
+        params: {
+          ...(searchQuery && { irNumber: searchQuery }),
+          page: pageNumber,
+          limit
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
-        setData(prevData =>
-          pageNumber === 1 ? newData : [...prevData, ...newData]
-        )
-        setHasMore(newData.length >= limit)
+      if (response.data.message) {
+        throw new Error(response.data.message);
       }
+
+      return response.data.data || []; // Adjust to your server's response structure
     } catch (error) {
-      console.error(
-        'Error fetching data:',
-        error.response ? error.response.data : error.message
-      )
-    } finally {
-      setLoading(false)
-      setIsFetchingMore(false)
+      console.error(error);
+      throw error;
     }
-  }
+  };
+
+  const loadInitial = async () => {
+    setLoading(true);
+    try {
+      const initialData = await fetchData(1, searchQuery);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+      setErrorMessage('');
+    } catch (error) {
+      setData([]);
+      setErrorMessage(error.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!hasMore || isFetchingMore) return;
+    setIsFetchingMore(true);
+
+    try {
+      const nextPage = page + 1;
+      const nextPageData = await fetchData(nextPage, searchQuery);
+      setData(prev => [...prev, ...nextPageData]);
+      setPage(nextPage);
+      setHasMore(nextPageData.length >= limit);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setPage(1);
+    try {
+      const initialData = await fetchData(1, searchQuery);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+      setErrorMessage('');
+    } catch (error) {
+      setData([]);
+      setErrorMessage(error.message || 'Failed to load data');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetchData(1)
-  }, [])
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true)
-    fetchData(1).then(() => setRefreshing(false))
-  }, [])
-
-  const handleLoadMore = () => {
-    if (hasMore && !isFetchingMore) {
-      setPage(prevPage => prevPage + 1)
-      fetchData(page + 1)
-    }
-  }
+    loadInitial();
+  }, [searchQuery]);
 
   const handleDelete = async issueReturnId => {
     try {
-      const token = await SecureStore.getItemAsync('token')
+      const token = await SecureStore.getItemAsync('token');
       await axios.delete(
         `${ServerUrl}/issueReturnGeneral/delete-issue-return-general`,
         {
@@ -105,46 +138,46 @@ const IssueReturnGeneralData = ({ navigation }) => {
             Authorization: `Bearer ${token}`
           }
         }
-      )
-      Alert.alert('Success', 'Issue Return deleted successfully.')
-      fetchData(1)
+      );
+      Alert.alert('Success', 'Issue Return deleted successfully.');
+      fetchData(1);
     } catch (error) {
       console.error(
         'Error deleting issue return:',
         error.response ? error.response.data : error.message
-      )
+      );
       Alert.alert(
         'Error',
         error.response ? error.response.data.message : 'Something went wrong.'
-      )
+      );
     } finally {
-      setConfirmVisible(false)
+      setConfirmVisible(false);
     }
-  }
+  };
 
   const confirmDelete = id => {
-    setDeleteId(id)
-    setConfirmVisible(true)
-  }
+    setDeleteId(id);
+    setConfirmVisible(true);
+  };
 
   const closeConfirmModal = () => {
-    setConfirmVisible(false)
-    setDeleteId(null)
-  }
+    setConfirmVisible(false);
+    setDeleteId(null);
+  };
 
   const handleEdit = issueReturn => {
-    navigation.navigate('IssueReturnGeneralEdit', { issueReturn })
-  }
+    navigation.navigate('IssueReturnGeneralEdit', { issueReturn });
+  };
 
   const handleShow = issueReturn => {
-    setSelectedIssueReturn(issueReturn)
-    setModalVisible(true)
-  }
+    setSelectedIssueReturn(issueReturn);
+    setModalVisible(true);
+  };
 
   const closeModal = () => {
-    setModalVisible(false)
-    setSelectedIssueReturn(null)
-  }
+    setModalVisible(false);
+    setSelectedIssueReturn(null);
+  };
 
   const renderItem = ({ item, index }) => (
     <DataCard
@@ -179,7 +212,7 @@ const IssueReturnGeneralData = ({ navigation }) => {
       style={styles.dataCard}
       onPress={() => handleShow(item)}
     />
-  )
+  );
 
   return (
     <View style={styles.container}>
@@ -193,6 +226,8 @@ const IssueReturnGeneralData = ({ navigation }) => {
           <Text style={styles.header}>Issue Return General Data</Text>
         </View>
       )}
+
+      <SearchBar onSearch={setSearchQuery} />
 
       {loading ? (
         <ActivityIndicator size='large' color='#1b1f26' />
@@ -210,6 +245,13 @@ const IssueReturnGeneralData = ({ navigation }) => {
             isFetchingMore ? (
               <ActivityIndicator size='small' color='#1b1f26' />
             ) : null
+          }
+          ListEmptyComponent={
+            !loading && (
+              <Text style={{ textAlign: 'center', color: '#666' }}>
+                No issue returns found
+              </Text>
+            )
           }
         />
       )}
@@ -276,8 +318,8 @@ const IssueReturnGeneralData = ({ navigation }) => {
         message='Are you sure you want to delete this issue return?'
       />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -373,6 +415,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16
   }
-})
+});
 
-export default IssueReturnGeneralData
+export default IssueReturnGeneralData;

@@ -1,52 +1,59 @@
-import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
-import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet } from 'react-native'
-import FormFields from '../../common/FormFields'
-import FormRows from '../../common/FormRows'
-import ServerUrl from '../../config/ServerUrl'
-import { validateForm, validationMethods } from '../../utils/formValidation'
-import ReusableButton from '../../utils/reusableButton'
-import ReusableModal from '../../utils/ReusableModal'
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
+import FormFields from '../../common/FormFields';
+import FormRows from '../../common/FormRows';
+import ServerUrl from '../../config/ServerUrl';
+import { validateForm, validationMethods } from '../../utils/formValidation';
+import ReusableButton from '../../utils/reusableButton';
+import ReusableModal from '../../utils/ReusableModal';
 
 const IssueGeneralEdit = ({ navigation, route }) => {
-  const { issue } = route.params // Assuming issue data is passed via route params
+  const { issue } = route.params; // Assuming issue data is passed via route params
 
   const formatDate = isoDate => {
-    const date = new Date(isoDate)
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}-${month}-${year}`
-  }
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
-  const [rows, setRows] = useState(issue.rows.map(row => ({ ...row })) || [])
-  const [grnNumber, setGrnNumber] = useState(issue.grnNumber || '')
-  const [issueDate, setIssueDate] = useState(formatDate(issue.issueDate) || '')
-  const [store, setStore] = useState(issue.store || '')
+  const [rows, setRows] = useState(issue.rows.map(row => ({ ...row })) || []);
+  const [grnNumber, setGrnNumber] = useState(issue.grnNumber || '');
+  const [issueNumber, setIssueNumber] = useState(issue.issueNumber || '');
+  const [issueDate, setIssueDate] = useState(formatDate(issue.issueDate) || '');
+  const [store, setStore] = useState(issue.store || '');
   const [requisitionType, setRequisitionType] = useState(
     issue.requisitionType || 'On Requisition'
-  )
-  const [issueToUnit, setIssueToUnit] = useState(issue.issueToUnit || '')
-  const [vehicleType, setVehicleType] = useState(issue.vehicleType || '')
+  );
+  const [issueToUnit, setIssueToUnit] = useState(issue.issueToUnit || '');
+  const [vehicleType, setVehicleType] = useState(issue.vehicleType || '');
   const [issueToDepartment, setIssueToDepartment] = useState(
     issue.issueToDepartment || ''
-  )
-  const [vehicleNo, setVehicleNo] = useState(issue.vehicleNo || '')
-  const [driver, setDriver] = useState(issue.driver || '')
-  const [remarks, setRemarks] = useState(issue.remarks || '')
-  const [demandNo, setDemandNo] = useState(issue.demandNo || '')
-  const [errors, setErrors] = useState({})
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [successModalVisible, setSuccessModalVisible] = useState(false)
-  const [errorModalVisible, setErrorModalVisible] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  );
+  const [vehicleNo, setVehicleNo] = useState(issue.vehicleNo || '');
+  const [driver, setDriver] = useState(issue.driver || '');
+  const [remarks, setRemarks] = useState(issue.remarks || '');
+  const [demandNo, setDemandNo] = useState(issue.demandNo || '');
+  const [errors, setErrors] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const formFields = [
     {
       name: 'grnNumber',
       label: 'GRN Number',
+      icon: 'document-text-outline',
+      type: 'text'
+    },
+    {
+      name: 'issueNumber',
+      label: 'Issue Number',
       icon: 'document-text-outline',
       type: 'text'
     },
@@ -105,58 +112,61 @@ const IssueGeneralEdit = ({ navigation, route }) => {
       icon: 'document-text-outline',
       type: 'text'
     }
-  ]
+  ];
 
   const handleInputChange = (name, value) => {
     switch (name) {
       case 'grnNumber':
-        setGrnNumber(value)
-        break
+        setGrnNumber(value);
+        break;
+      case 'issueNumber':
+        setIssueNumber(value);
+        break;
       case 'issueDate':
-        setIssueDate(value)
-        break
+        setIssueDate(value);
+        break;
       case 'store':
-        setStore(value)
-        break
+        setStore(value);
+        break;
       case 'requisitionType':
-        setRequisitionType(value)
-        break
+        setRequisitionType(value);
+        break;
       case 'issueToUnit':
-        setIssueToUnit(value)
-        break
+        setIssueToUnit(value);
+        break;
       case 'vehicleType':
-        setVehicleType(value)
-        break
+        setVehicleType(value);
+        break;
       case 'issueToDepartment':
-        setIssueToDepartment(value)
-        break
+        setIssueToDepartment(value);
+        break;
       case 'vehicleNo':
-        setVehicleNo(value)
-        break
+        setVehicleNo(value);
+        break;
       case 'driver':
-        setDriver(value)
-        break
+        setDriver(value);
+        break;
       case 'remarks':
-        setRemarks(value)
-        break
+        setRemarks(value);
+        break;
       case 'demandNo':
-        setDemandNo(value)
-        break
+        setDemandNo(value);
+        break;
       default:
-        break
+        break;
     }
-  }
+  };
 
   const handleRowInputChange = (index, name, value) => {
-    const newRows = [...rows]
-    newRows[index][name] = value
-    setRows(newRows)
-  }
+    const newRows = [...rows];
+    newRows[index][name] = value;
+    setRows(newRows);
+  };
 
   const removeRow = index => {
-    const newRows = rows.filter((_, i) => i !== index)
-    setRows(newRows)
-  }
+    const newRows = rows.filter((_, i) => i !== index);
+    setRows(newRows);
+  };
 
   const addRow = () => {
     setRows([
@@ -173,12 +183,18 @@ const IssueGeneralEdit = ({ navigation, route }) => {
         issueQty: '',
         rowRemarks: ''
       }
-    ])
-  }
+    ]);
+  };
 
   const handleSubmit = async () => {
-    setIsSubmitted(true)
+    setIsSubmitted(true);
     const validationRules = [
+      {
+        field: 'issueNumber',
+        validations: [
+          { method: validationMethods.required, message: 'Issue Number is required' }
+        ]
+      },
       {
         field: 'issueDate',
         validations: [
@@ -285,7 +301,7 @@ const IssueGeneralEdit = ({ navigation, route }) => {
           level3ItemCategory: [
             {
               method: validationMethods.required,
-              message: 'Level 3 Item Category is required'
+              message: 'Category is required'
             }
           ],
           itemName: [
@@ -346,9 +362,10 @@ const IssueGeneralEdit = ({ navigation, route }) => {
           ]
         }
       }
-    ]
+    ];
 
     const formData = {
+      issueNumber,
       grnNumber,
       issueDate,
       store,
@@ -361,27 +378,28 @@ const IssueGeneralEdit = ({ navigation, route }) => {
       remarks,
       demandNo,
       rows
-    }
-    const validationErrors = validateForm(formData, validationRules)
-    setErrors(validationErrors)
+    };
+    const validationErrors = validateForm(formData, validationRules);
+    setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
       // Simulate form submission
-      setLoading(true)
+      setLoading(true);
       try {
-        const token = await SecureStore.getItemAsync('token')
-        const user = await SecureStore.getItemAsync('user')
-        const userId = JSON.parse(user)._id
-        console.log('User ID:', userId) // Debugging log
+        const token = await SecureStore.getItemAsync('token');
+        const user = await SecureStore.getItemAsync('user');
+        const userId = JSON.parse(user)._id;
+        console.log('User ID:', userId); // Debugging log
         const isoDate = new Date(
           issueDate.split('-').reverse().join('-')
-        ).toISOString()
+        ).toISOString();
         const response = await axios.put(
           `${ServerUrl}/issueGeneral/update-issue-general`,
           {
             token,
             id: issue._id,
             userId,
+            issueNumber,
             grnNumber,
             issueDate: isoDate,
             store,
@@ -400,36 +418,37 @@ const IssueGeneralEdit = ({ navigation, route }) => {
               Authorization: `Bearer ${token}`
             }
           }
-        )
-        console.log(response.data)
+        );
+        console.log(response.data);
         if (response.status === 200) {
-          setSuccessModalVisible(true)
+          setSuccessModalVisible(true);
         } else {
-          Alert.alert('Error', response.data.message || 'Something went wrong.')
+          Alert.alert('Error', response.data.message || 'Something went wrong.');
         }
       } catch (error) {
-        console.error(error)
-        Alert.alert('Error', 'An error occurred while updating the issue.')
+        console.error(error);
+        Alert.alert('Error', 'An error occurred while updating the issue.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     } else {
-      const firstError = Object.values(validationErrors)[0]
-      setErrorMessage(firstError)
-      setErrorModalVisible(true)
+      const firstError = Object.values(validationErrors)[0];
+      setErrorMessage(firstError);
+      setErrorModalVisible(true);
     }
-  }
+  };
 
   const handleSuccessModalClose = () => {
-    setSuccessModalVisible(false)
-    navigation.navigate('IssueGeneralData')
-  }
+    setSuccessModalVisible(false);
+    navigation.navigate('IssueGeneralData');
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <FormFields
         fields={formFields}
         values={{
+          issueNumber,
           grnNumber,
           issueDate,
           store,
@@ -452,8 +471,8 @@ const IssueGeneralEdit = ({ navigation, route }) => {
           { name: 'serialNo', label: 'Serial No', placeholder: 'Serial No' },
           {
             name: 'level3ItemCategory',
-            label: 'Level 3 Item Category',
-            placeholder: 'Level 3 Item Category'
+            label: 'Item Category',
+            placeholder: 'Item Category'
           },
           { name: 'itemName', label: 'Item Name', placeholder: 'Item Name' },
           { name: 'uom', label: 'UOM', placeholder: 'UOM' },
@@ -516,8 +535,8 @@ const IssueGeneralEdit = ({ navigation, route }) => {
         onButtonPress={() => setErrorModalVisible(false)}
       />
     </ScrollView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -528,7 +547,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20
   },
-
   buttonContainer: {
     marginTop: 20
   },
@@ -542,6 +560,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16
   }
-})
+});
 
-export default IssueGeneralEdit
+export default IssueGeneralEdit;

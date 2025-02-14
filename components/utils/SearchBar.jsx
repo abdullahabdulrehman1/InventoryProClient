@@ -1,27 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Easing
+} from 'react-native'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 
 const SearchBar = ({ onSearch }) => {
-  const [searchText, setSearchText] = useState('');
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [searchText, setSearchText] = useState('')
+  const spinAnim = useRef(new Animated.Value(0)).current
+  const progressAnim = useRef(new Animated.Value(0)).current
 
   // Rotation animation interpolations
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg']
-  });
+  })
 
   // Progress animation interpolation
   const progress = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg']
-  });
+  })
 
   useEffect(() => {
-    let debounceTimer;
-    
+    let debounceTimer
+
     if (searchText) {
       // Start animations
       Animated.parallel([
@@ -39,75 +46,76 @@ const SearchBar = ({ onSearch }) => {
             useNativeDriver: true
           })
         )
-      ]).start();
+      ]).start()
 
       debounceTimer = setTimeout(() => {
-        onSearch(searchText);
+        onSearch(searchText)
         // Reset animations
-        progressAnim.setValue(0);
-        spinAnim.setValue(0);
-      }, 1000);
+        progressAnim.setValue(0)
+        spinAnim.setValue(0)
+      }, 1000)
     } else {
       // When search is empty, reset immediately
-      onSearch('');
-      progressAnim.setValue(0);
-      spinAnim.setValue(0);
+      onSearch('')
+      progressAnim.setValue(0)
+      spinAnim.setValue(0)
     }
 
     return () => {
-      clearTimeout(debounceTimer);
-      progressAnim.setValue(0);
-      spinAnim.setValue(0);
-    };
-  }, [searchText]);
+      clearTimeout(debounceTimer)
+      progressAnim.setValue(0)
+      spinAnim.setValue(0)
+    }
+  }, [searchText])
 
   const handleClear = () => {
-    setSearchText('');
-    onSearch('');
-  };
+    setSearchText('')
+    onSearch('')
+  }
 
   return (
     <View style={styles.container}>
       <TextInput
         style={styles.input}
-        placeholder="Search by DR Number"
-        placeholderTextColor="#90CAF9"
+        placeholder='Search Here'
+        placeholderTextColor='#90CAF9'
         value={searchText}
         onChangeText={setSearchText}
-        selectionColor="#64B5F6"
+        selectionColor='#64B5F6'
       />
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         onPress={searchText ? handleClear : () => onSearch(searchText)}
         style={styles.iconContainer}
       >
         {searchText ? (
           <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <MaterialCommunityIcons 
-              name={searchText ? "clock-outline" : "magnify"} 
-              size={24} 
-              color="#2196F3" 
+            <MaterialCommunityIcons
+              name={searchText ? 'clock-outline' : 'magnify'}
+              size={24}
+              color='#2196F3'
             />
           </Animated.View>
         ) : (
-          <MaterialCommunityIcons 
-            name="magnify" 
-            size={24} 
-            color="#2196F3" 
-          />
+          <MaterialCommunityIcons name='magnify' size={24} color='#2196F3' />
         )}
 
         {/* Progress background */}
         {searchText && (
-          <Animated.View style={[styles.progressRing, {
-            transform: [{ rotate: progress }],
-            borderLeftColor: 'transparent'
-          }]} />
+          <Animated.View
+            style={[
+              styles.progressRing,
+              {
+                transform: [{ rotate: progress }],
+                borderLeftColor: 'transparent'
+              }
+            ]}
+          />
         )}
       </TouchableOpacity>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -121,7 +129,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 3
   },
   input: {
     flex: 1,
@@ -132,14 +140,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#64B5F6',
+    borderColor: '#64B5F6'
   },
   iconContainer: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: 8
   },
   progressRing: {
     position: 'absolute',
@@ -148,8 +156,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: '#2196F3',
-    borderLeftColor: 'transparent',
-  },
-});
+    borderLeftColor: 'transparent'
+  }
+})
 
-export default SearchBar;
+export default SearchBar

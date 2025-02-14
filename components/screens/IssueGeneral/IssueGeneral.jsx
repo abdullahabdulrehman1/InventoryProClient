@@ -25,6 +25,7 @@ const IssueGeneral = ({ navigation }) => {
     },
   ]);
   const [grnNumber, setGrnNumber] = useState("");
+  const [issueNumber, setIssueNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
   const [store, setStore] = useState("");
   const [requisitionType, setRequisitionType] = useState("On Requisition");
@@ -44,6 +45,7 @@ const IssueGeneral = ({ navigation }) => {
 
   const formFields = [
     { name: "grnNumber", label: "GRN Number", icon: "document-text-outline", type: "text" },
+    { name: "issueNumber", label: "Issue Number", icon: "document-text-outline", type: "text" },
     { name: "issueDate", label: "Issue Date", icon: "calendar-outline", type: "date", placeholder: "dd-mm-yyyy" },
     { name: "store", label: "Store", icon: "business-outline", type: "text" },
     { name: "requisitionType", label: "Requisition Type", icon: "list-outline", type: "picker", options: [
@@ -63,6 +65,9 @@ const IssueGeneral = ({ navigation }) => {
     switch (name) {
       case "grnNumber":
         setGrnNumber(value);
+        break;
+      case "issueNumber":
+        setIssueNumber(value);
         break;
       case "issueDate":
         setIssueDate(value);
@@ -137,6 +142,11 @@ const IssueGeneral = ({ navigation }) => {
         validations: [{ method: validationMethods.required, message: "Issue Date is required" }, { method: validationMethods.validateDate, message: "Issue Date must be in dd-mm-yyyy format" }],
       },
       {
+        field: "issueNumber",
+        validations: [{ method: validationMethods.required, message: "Issue Number is required" }, 
+        ]
+      },
+      {
         field: "store",
         validations: [{ method: validationMethods.required, message: "Store is required" }],
       },
@@ -177,7 +187,7 @@ const IssueGeneral = ({ navigation }) => {
         validations: {
           action: [{ method: validationMethods.required, message: "Action is required" }],
           serialNo: [{ method: validationMethods.required, message: "Serial No is required" }],
-          level3ItemCategory: [{ method: validationMethods.required, message: "Level 3 Item Category is required" }],
+          level3ItemCategory: [{ method: validationMethods.required, message: "Item Category is required" }],
           itemName: [{ method: validationMethods.required, message: "Item Name is required" }],
           uom: [{ method: validationMethods.required, message: "UOM is required" }],
           grnQty: [{ method: validationMethods.required, message: "GRN Qty is required" }, { method: validationMethods.isNumber, message: "GRN Qty must be a number" }],
@@ -192,6 +202,7 @@ const IssueGeneral = ({ navigation }) => {
     const formData = {
       grnNumber,
       issueDate,
+      issueNumber,
       store,
       requisitionType,
       issueToUnit,
@@ -221,6 +232,7 @@ const IssueGeneral = ({ navigation }) => {
             token,
             userId,
             grnNumber,
+            issueNumber,
             issueDate: isoDate,
             store,
             requisitionType,
@@ -273,6 +285,7 @@ const IssueGeneral = ({ navigation }) => {
           requisitionType,
           issueToUnit,
           vehicleType,
+          issueNumber,
           issueToDepartment,
           vehicleNo,
           driver,
@@ -287,7 +300,7 @@ const IssueGeneral = ({ navigation }) => {
         rowFields={[
           { name: "action", label: "Action", placeholder: "Action" },
           { name: "serialNo", label: "Serial No", placeholder: "Serial No" },
-          { name: "level3ItemCategory", label: "Level 3 Item Category", placeholder: "Level 3 Item Category" },
+          { name: "level3ItemCategory", label: "Item Category", placeholder: "Item Category" },
           { name: "itemName", label: "Item Name", placeholder: "Item Name" },
           { name: "uom", label: "UOM", placeholder: "UOM" },
           { name: "grnQty", label: "GRN Qty", placeholder: "GRN Qty", type: "number" },

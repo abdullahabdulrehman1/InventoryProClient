@@ -1,15 +1,17 @@
 import { Ionicons } from '@expo/vector-icons'
-import { CommonActions } from '@react-navigation/native'
 import axios from 'axios'
+import { format } from 'date-fns'
 import * as SecureStore from 'expo-secure-store'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
+  Animated,
   FlatList,
+  LayoutAnimation,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator
 } from 'react-native'
 import { useSelector } from 'react-redux'
 import { ROLES } from '../../auth/role'
@@ -19,165 +21,132 @@ import DetailModal from '../../utils/DetailModal'
 import ConfirmationModal from '../../utils/ConfirmationModal'
 import ItemDetailCard from '../../utils/ItemDetailCard'
 import DetailHeader from '../../utils/DetailHeader'
-import { format } from 'date-fns'
+import SearchBar from '../../utils/SearchBar'
+import SkeletonLoader from '../../ui/SkeletonLoader'
+import { animationStyles, skeletonStyles } from '../../styles/Animations'
+import AnimatedLoader from '../../utils/AnimatedLoader'
 
-const formatDate = dateString => {
-  const date = new Date(dateString)
-  return format(date, 'dd-MM-yyyy')
-}
 const POGeneralData = ({ navigation }) => {
+  // State Management
   const [data, setData] = useState([])
   const [page, setPage] = useState(1)
   const [isFetching, setIsFetching] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedPO, setSelectedPO] = useState(null)
-  const [serverMessage, setServerMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [confirmVisible, setConfirmVisible] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const fadeAnim = useRef(new Animated.Value(0)).current
   const userRole = useSelector(state => state?.auth?.user?.role)
 
-  const fetchData = async (pageNumber = 1) => {
+  // Data Fetching
+  const fetchData = async (pageNumber = 1, searchQuery = '') => {
     try {
       const token = await SecureStore.getItemAsync('token')
+      if (!token) return
 
-      if (token) {
-        setIsFetching(true)
-        const response = await axios.get(`${ServerUrl}/poGeneral/showPO`, {
-          params: {
-            page: pageNumber,
-            limit: 8
-          },
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+      setIsFetching(true)
+      const endpoint = searchQuery ? '/poGeneral/searchPO' : '/poGeneral/showPO'
 
-        const { data: newData, totalPages: fetchedTotalPages } = response.data
+      const { data: response } = await axios.get(ServerUrl + endpoint, {
+        params: {
+          ...(searchQuery && { poNumber: searchQuery }),
+          page: pageNumber,
+          limit: 10
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      })
 
-        setData(prevData =>
-          pageNumber === 1 ? newData : [...prevData, ...newData]
-        )
-        setTotalPages(fetchedTotalPages)
-      }
-    } catch (error) {
-      console.error(
-        'Error fetching data:',
-        error.response ? error.response.data : error.message
+      setData(prev =>
+        pageNumber === 1 ? response.data : [...prev, ...response.data]
       )
+      setTotalPages(response.totalPages)
+      setErrorMessage('')
+    } catch (error) {
+      handleFetchError(error)
     } finally {
       setLoading(false)
       setIsFetching(false)
     }
   }
 
+  const handleFetchError = error => {
+    const message = error.response?.data?.message || 'Error fetching data'
+    setErrorMessage(message)
+    setData([])
+    console.error('Fetch error:', error)
+  }
+
+  // Effects
   useEffect(() => {
     fetchData(1)
   }, [])
 
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }).start()
+    }
+  }, [loading])
+
+  // Pagination
   const handleLoadMore = () => {
     if (page < totalPages && !isFetching) {
-      setPage(prevPage => prevPage + 1)
-      fetchData(page + 1)
+      setPage(prev => prev + 1)
+      fetchData(page + 1, searchQuery)
     }
   }
 
+  // Search Handling
+  const handleSearch = searchText => {
+    setSearchQuery(searchText)
+    setPage(1)
+    fetchData(1, searchText)
+  }
+
+  // Delete Handling
   const handleDelete = async id => {
-    const token = await SecureStore.getItemAsync('token')
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     try {
-      const response = await axios.delete(`${ServerUrl}/poGeneral/deletePO`, {
-        data: {
-          purchaseOrderId: id
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const token = await SecureStore.getItemAsync('token')
+      await axios.delete(`${ServerUrl}/poGeneral/deletePO`, {
+        data: { purchaseOrderId: id },
+        headers: { Authorization: `Bearer ${token}` }
       })
-      console.log(response.data)
-      setServerMessage(response.data.message)
-      setData(data.filter(item => item._id !== id))
+      setData(prev => prev.filter(item => item._id !== id))
     } catch (error) {
-      console.error(
-        'Error deleting PO:',
-        error.response ? error.response.data : error.message
-      )
+      console.error('Delete error:', error.response?.data || error.message)
     } finally {
       setConfirmVisible(false)
     }
   }
 
-  const confirmDelete = id => {
-    setDeleteId(id)
-    setConfirmVisible(true)
-  }
+  // Date Formatting
+  const formatDate = dateString => format(new Date(dateString), 'dd-MM-yyyy')
 
-  const handleShow = po => {
-    setSelectedPO(po)
-    setModalVisible(true)
-  }
-
-  const handleEdit = po => {
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 1,
-        routes: [
-          { name: 'POGeneral' },
-          { name: 'POGeneralEdit', params: { po } }
-        ]
-      })
-    )
-  }
-
-  const closeModal = () => {
-    setModalVisible(false)
-    setSelectedPO(null)
-  }
-
-  const closeConfirmModal = () => {
-    setConfirmVisible(false)
-    setDeleteId(null)
-  }
-
-  const renderItem = ({ item, index }) => (
-    <DataCard
-      item={item}
-      titleKey='poNumber'
-      subtitleKey='supplierName'
-      fields={[
-        { label: 'Date', key: 'date', format: formatDate },
-        { label: 'Purchaser', key: 'purchaser' },
-        { label: 'Supplier', key: 'supplier' },
-        { label: 'Po Delivery', key: 'poDelivery', format: formatDate }
-      ]}
-      actions={
-        userRole !== ROLES.VIEW_ONLY
-          ? [
-              {
-                label: 'Show',
-                handler: item => handleShow(item),
-                style: { backgroundColor: '#3182ce' }
-              },
-              {
-                label: 'Edit',
-                handler: item => handleEdit(item),
-                style: { backgroundColor: '#2b6cb0' }
-              },
-              {
-                label: 'Delete',
-                handler: item => confirmDelete(item._id),
-                style: { backgroundColor: '#e53e3e' }
-              }
-            ]
-          : []
-      }
-      style={styles.dataCard}
-      onPress={() => handleShow(item)}
-    />
-  )
+  // Loading Skeletons
+  const renderSkeletons = () =>
+    [...Array(5)].map((_, i) => (
+      <SkeletonLoader
+        key={i}
+        style={skeletonStyles.card}
+        lines={[
+          { width: '60%', height: 20 },
+          { width: '40%', height: 16 },
+          { width: '50%', height: 16 }
+        ]}
+      />
+    ))
 
   return (
     <View style={styles.container}>
+      {/* Header Section */}
       {userRole !== ROLES.VIEW_ONLY && (
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('POGeneral')}>
@@ -187,31 +156,92 @@ const POGeneralData = ({ navigation }) => {
         </View>
       )}
 
-      {serverMessage ? (
-        <View style={styles.messageContainer}>
-          <Text style={styles.messageText}>{serverMessage}</Text>
-        </View>
-      ) : null}
+      {/* Search Section */}
+      <SearchBar onSearch={handleSearch} />
+
+      {/* Content Section */}
       {loading ? (
-        <ActivityIndicator size='large' color='#1b1f26' />
+        <View style={styles.loadingContainer}>{renderSkeletons()}</View>
       ) : (
-        <FlatList
-          data={data}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => item._id || index.toString()}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isFetching ? (
-              <ActivityIndicator size='small' color='#1b1f26' />
-            ) : null
-          }
-        />
+        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+          {errorMessage ? (
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+          ) : (
+            <FlatList
+              data={data}
+              keyExtractor={(item, index) => item._id || index.toString()}
+              renderItem={({ item }) => (
+                <DataCard
+                  item={item}
+                  titleKey='poNumber'
+                  subtitleKey='supplier'
+                  fields={[
+                    { label: 'Date', key: 'date', format: formatDate },
+                    { label: 'Purchaser', key: 'purchaser' },
+                    { label: 'Supplier', key: 'supplier' },
+                    {
+                      label: 'Po Delivery',
+                      key: 'poDelivery',
+                      format: formatDate
+                    }
+                  ]}
+                  actions={
+                    userRole !== ROLES.VIEW_ONLY
+                      ? [
+                          {
+                            label: 'Show',
+                            handler: () => {
+                              setSelectedPO(item)
+                              setModalVisible(true)
+                            },
+                            style: animationStyles.primaryButton
+                          },
+                          {
+                            label: 'Edit',
+                            handler: () =>
+                              navigation.navigate('POGeneralEdit', {
+                                po: item
+                              }),
+                            style: animationStyles.secondaryButton
+                          },
+                          {
+                            label: 'Delete',
+                            handler: () => {
+                              setDeleteId(item._id)
+                              setConfirmVisible(true)
+                            },
+                            style: animationStyles.dangerButton
+                          }
+                        ]
+                      : []
+                  }
+                  onPress={() => {
+                    setSelectedPO(item)
+                    setModalVisible(true)
+                  }}
+                  animation='fadeIn'
+                  duration={300}
+                />
+              )}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                isFetching && (
+                  <View style={styles.loadingFooter}>
+                    <AnimatedLoader color='#2b6cb0' />
+                    <Text style={styles.loadingText}>Loading more...</Text>
+                  </View>
+                )
+              }
+            />
+          )}
+        </Animated.View>
       )}
 
+      {/* Modals */}
       <DetailModal
         visible={modalVisible}
-        onClose={closeModal}
+        onClose={() => setModalVisible(false)}
         title='PO Details'
       >
         {selectedPO && (
@@ -272,7 +302,7 @@ const POGeneralData = ({ navigation }) => {
 
       <ConfirmationModal
         visible={confirmVisible}
-        onCancel={closeConfirmModal}
+        onCancel={() => setConfirmVisible(false)}
         onConfirm={() => handleDelete(deleteId)}
         title='Confirm Delete'
         message='Are you sure you want to delete this PO?'
@@ -281,109 +311,44 @@ const POGeneralData = ({ navigation }) => {
   )
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 10 // Add padding to the top
+    padding: 16,
+    backgroundColor: '#f8fafc'
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 20
   },
   header: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginLeft: 10
+    fontWeight: '700',
+    marginLeft: 12,
+    color: '#1e3a8a'
   },
-  messageContainer: {
-    padding: 10,
-    backgroundColor: '#d4edda',
-    borderRadius: 5,
-    marginBottom: 10
-  },
-  messageText: {
-    color: '#155724',
-    fontSize: 16
-  },
-  dataCard: {
-    marginHorizontal: 10,
-    marginBottom: 15
-  },
-  itemCard: {
-    marginHorizontal: 5,
-    marginVertical: 8
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#718096'
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#2d3748'
-  },
-  actionButton: {
-    backgroundColor: '#1b1f26',
-    padding: 5,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginHorizontal: 5,
-    flex: 1
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 12
-  },
-  modalContainer: {
+  loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    padding: 16
   },
-  modalContent: {
-    width: '90%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 20
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20
-  },
-  modalFieldsContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20
-  },
-  modalText: {
+  errorMessage: {
     fontSize: 16,
-    marginBottom: 10
-  },
-  boldText: {
-    fontWeight: 'bold'
-  },
-  row: {
-    marginBottom: 10
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#ccc',
-    marginVertical: 10
-  },
-  button: {
-    backgroundColor: '#1b1f26',
-    padding: 15,
-    borderRadius: 20,
-    alignItems: 'center',
+    color: '#dc2626',
+    textAlign: 'center',
     marginTop: 20
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16
+  loadingFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16
+  },
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#2563eb'
   }
 })
 

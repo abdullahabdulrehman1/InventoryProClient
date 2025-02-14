@@ -1,97 +1,128 @@
-import { Ionicons } from '@expo/vector-icons'
-import { CommonActions } from '@react-navigation/native'
-import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
-import React, { useCallback, useEffect, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { format } from 'date-fns';
+import * as SecureStore from 'expo-secure-store';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
-} from 'react-native'
-import { useSelector } from 'react-redux'
-import { ROLES } from '../../auth/role'
-import ServerUrl from '../../config/ServerUrl'
-import DataCard from '../../utils/DataCard'
-import DetailModal from '../../utils/DetailModal'
-import ConfirmationModal from '../../utils/ConfirmationModal'
-import ItemDetailCard from '../../utils/ItemDetailCard'
-import DetailHeader from '../../utils/DetailHeader'
-import { format } from 'date-fns'
+} from 'react-native';
+import { useSelector } from 'react-redux';
+import { ROLES } from '../../auth/role';
+import ServerUrl from '../../config/ServerUrl';
+import { animationStyles, skeletonStyles } from '../../styles/Animations';
+import SkeletonLoader from '../../ui/SkeletonLoader';
+import ConfirmationModal from '../../utils/ConfirmationModal';
+import DataCard from '../../utils/DataCard';
+import DetailHeader from '../../utils/DetailHeader';
+import DetailModal from '../../utils/DetailModal';
+import ItemDetailCard from '../../utils/ItemDetailCard';
+import SearchBar from '../../utils/SearchBar';
 
 const GRNGeneralData = ({ navigation }) => {
-  const formatDate = dateString => {
-    const date = new Date(dateString)
-    return format(date, 'dd-MM-yyyy')
-  }
-  const [data, setData] = useState([])
-  const [page, setPage] = useState(1)
-  const [isFetching, setIsFetching] = useState(false)
-  const [totalPages, setTotalPages] = useState(1)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedGRN, setSelectedGRN] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [confirmVisible, setConfirmVisible] = useState(false)
-  const [deleteId, setDeleteId] = useState(null)
-  const userRole = useSelector(state => state?.auth?.user?.role)
+  // State Management
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isFetching, setIsFetching] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedGRN, setSelectedGRN] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const userRole = useSelector(state => state?.auth?.user?.role);
 
-  const fetchData = async (pageNumber = 1) => {
+  // Data Fetching
+  const fetchData = async (pageNumber = 1, searchQuery = '') => {
     try {
-      const token = await SecureStore.getItemAsync('token')
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) return;
 
-      if (token) {
-        setIsFetching(true)
-        const response = await axios.get(`${ServerUrl}/grnGeneral/get-grn`, {
-          params: {
-            page: pageNumber,
-            limit: 8
-          },
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+      setIsFetching(true);
+      const endpoint = searchQuery
+        ? '/grnGeneral/searchGRN'
+        : '/grnGeneral/get-grn';
 
-        const { data: newData, totalPages: fetchedTotalPages } = response.data
+      const { data: response } = await axios.get(ServerUrl + endpoint, {
+        params: {
+          ...(searchQuery && { grnNumber: searchQuery }),
+          page: pageNumber,
+          limit: 10
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-        setData(prevData =>
-          pageNumber === 1 ? newData : [...prevData, ...newData]
-        )
-        setTotalPages(fetchedTotalPages)
-      }
+      setData(prev =>
+        pageNumber === 1 ? response.data : [...prev, ...response.data]
+      );
+      setTotalPages(response.totalPages);
+      setErrorMessage('');
     } catch (error) {
-      console.error(
-        'Error fetching data:',
-        error.response ? error.response.data : error.message
-      )
+      handleFetchError(error);
     } finally {
-      setLoading(false)
-      setIsFetching(false)
+      setLoading(false);
+      setIsFetching(false);
     }
-  }
+  };
+
+  const handleFetchError = error => {
+    const message = error.response?.data?.message || 'Error fetching data';
+    setErrorMessage(message);
+    setData([]);
+    console.error('Fetch error:', error);
+    Alert.alert('Error', message);
+  };
+
+  // Effects
+  useEffect(() => {
+    fetchData(1);
+  }, []);
 
   useEffect(() => {
-    fetchData(1)
-  }, [])
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }).start();
+    }
+  }, [loading]);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true)
-    fetchData(1).then(() => setRefreshing(false))
-  }, [])
-
+  // Pagination
   const handleLoadMore = () => {
     if (page < totalPages && !isFetching) {
-      setPage(prevPage => prevPage + 1)
-      fetchData(page + 1)
+      setPage(prev => prev + 1);
+      fetchData(page + 1, searchQuery);
     }
-  }
+  };
 
+  // Search Handling
+  const handleSearch = searchText => {
+    setSearchQuery(searchText);
+    setPage(1);
+    fetchData(1, searchText);
+  };
+
+  // Refresh Handling
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData(1).then(() => setRefreshing(false));
+  }, []);
+
+  // Delete Handling
   const handleDelete = async grnId => {
-    const token = await SecureStore.getItemAsync('token')
+    const token = await SecureStore.getItemAsync('token');
     try {
       const response = await axios.delete(
         `${ServerUrl}/grnGeneral/delete-grn/${grnId}`,
@@ -100,63 +131,49 @@ const GRNGeneralData = ({ navigation }) => {
             Authorization: `Bearer ${token}`
           }
         }
-      )
-      console.log(response.data)
-      setData(data.filter(item => item._id !== grnId))
-      Alert.alert('Success', 'GRN deleted successfully.')
+      );
+      console.log(response.data);
+      setData(data.filter(item => item._id !== grnId));
+      Alert.alert('Success', 'GRN deleted successfully.');
     } catch (error) {
       console.error(
         'Error deleting GRN:',
         error.response ? error.response.data : error.message
-      )
+      );
       Alert.alert(
         'Error',
         error.response ? error.response.data.message : 'Something went wrong.'
-      )
+      );
     } finally {
-      setConfirmVisible(false)
+      setConfirmVisible(false);
     }
-  }
+  };
 
-  const confirmDelete = id => {
-    setDeleteId(id)
-    setConfirmVisible(true)
-  }
+  // Date Formatting
+  const formatDate = dateString => format(new Date(dateString), 'dd-MM-yyyy');
 
-  const handleEdit = grn => {
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 1,
-        routes: [
-          { name: 'GRNGeneral' },
-          { name: 'GRNGeneralEdit', params: { grn } }
-        ]
-      })
-    )
-  }
+  // Loading Skeletons
+  const renderSkeletons = () =>
+    [...Array(5)].map((_, i) => (
+      <SkeletonLoader
+        key={i}
+        style={skeletonStyles.card}
+        lines={[
+          { width: '60%', height: 20 },
+          { width: '40%', height: 16 },
+          { width: '50%', height: 16 }
+        ]}
+      />
+    ));
 
-  const handleShow = grn => {
-    setSelectedGRN(grn)
-    setModalVisible(true)
-  }
-
-  const closeModal = () => {
-    setModalVisible(false)
-    setSelectedGRN(null)
-  }
-
-  const closeConfirmModal = () => {
-    setConfirmVisible(false)
-    setDeleteId(null)
-  }
-
-  const renderItem = ({ item, index }) => (
+  // Render Item
+  const renderItem = ({ item }) => (
     <DataCard
       item={item}
       titleKey='grnNumber'
       subtitleKey='supplier'
       fields={[
-        { label: 'Date', key: 'date' },
+        { label: 'Date', key: 'date', format: formatDate },
         { label: 'Inward Number', key: 'inwardNumber' },
         { label: 'Remarks', key: 'remarks' }
       ]}
@@ -165,29 +182,43 @@ const GRNGeneralData = ({ navigation }) => {
           ? [
               {
                 label: 'Show',
-                handler: item => handleShow(item),
-                style: { backgroundColor: '#3182ce' }
+                handler: () => {
+                  setSelectedGRN(item);
+                  setModalVisible(true);
+                },
+                style: animationStyles.primaryButton
               },
               {
                 label: 'Edit',
-                handler: item => handleEdit(item),
-                style: { backgroundColor: '#2b6cb0' }
+                handler: () =>
+                  navigation.navigate('GRNGeneralEdit', {
+                    grn: item
+                  }),
+                style: animationStyles.secondaryButton
               },
               {
                 label: 'Delete',
-                handler: item => confirmDelete(item._id),
-                style: { backgroundColor: '#e53e3e' }
+                handler: () => {
+                  setDeleteId(item._id);
+                  setConfirmVisible(true);
+                },
+                style: animationStyles.dangerButton
               }
             ]
           : []
       }
-      style={styles.dataCard}
-      onPress={() => handleShow(item)}
+      onPress={() => {
+        setSelectedGRN(item);
+        setModalVisible(true);
+      }}
+      animation='fadeIn'
+      duration={300}
     />
-  )
+  );
 
   return (
     <View style={styles.container}>
+      {/* Header Section */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('GRNGeneral')}>
           <Ionicons name='arrow-back' size={24} color='black' />
@@ -195,8 +226,12 @@ const GRNGeneralData = ({ navigation }) => {
         <Text style={styles.header}>GRN General Data</Text>
       </View>
 
+      {/* Search Section */}
+      <SearchBar onSearch={handleSearch} />
+
+      {/* Content Section */}
       {loading ? (
-        <ActivityIndicator size='large' color='#1b1f26' />
+        <View style={styles.loadingContainer}>{renderSkeletons()}</View>
       ) : (
         <FlatList
           data={data}
@@ -217,7 +252,7 @@ const GRNGeneralData = ({ navigation }) => {
 
       <DetailModal
         visible={modalVisible}
-        onClose={closeModal}
+        onClose={() => setModalVisible(false)}
         title='GRN Details'
       >
         {selectedGRN && (
@@ -270,121 +305,54 @@ const GRNGeneralData = ({ navigation }) => {
 
       <ConfirmationModal
         visible={confirmVisible}
-        onCancel={closeConfirmModal}
+        onCancel={() => setConfirmVisible(false)}
         onConfirm={() => handleDelete(deleteId)}
         title='Confirm Delete'
         message='Are you sure you want to delete this GRN?'
       />
     </View>
-  )
-}
+  );
+};
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 10
+    padding: 16,
+    backgroundColor: '#f8fafc'
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 20
   },
   header: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginLeft: 10
+    fontWeight: '700',
+    marginLeft: 12,
+    color: '#1e3a8a'
   },
-  dataCard: {
-    marginHorizontal: 10,
-    marginBottom: 15
-  },
-  itemCard: {
-    marginHorizontal: 5,
-    marginVertical: 8
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#718096'
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#2d3748'
-  },
-  actionButton: {
-    backgroundColor: '#1b1f26',
-    padding: 5,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginHorizontal: 5,
-    flex: 1
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 12
-  },
-  modalContainer: {
+  loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    padding: 16
   },
-  modalContent: {
-    width: '90%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 20
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20
-  },
-  modalFieldsContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20
-  },
-  modalText: {
+  errorMessage: {
     fontSize: 16,
-    marginBottom: 10
-  },
-  boldText: {
-    fontWeight: 'bold'
-  },
-  row: {
-    marginBottom: 10
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#ccc',
-    marginVertical: 10
-  },
-  button: {
-    backgroundColor: '#1b1f26',
-    padding: 15,
-    borderRadius: 20,
-    alignItems: 'center',
+    color: '#dc2626',
+    textAlign: 'center',
     marginTop: 20
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16
+  loadingFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16
   },
-  noRecordText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 18,
-    color: '#888'
-  },
-  errorText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 18,
-    color: 'red'
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#2563eb'
   }
-})
+});
 
-export default GRNGeneralData
+export default GRNGeneralData;

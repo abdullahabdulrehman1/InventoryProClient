@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -7,158 +7,185 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Alert
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
-import { useSelector } from 'react-redux'
-import { ROLES } from '../../auth/role'
-import ServerUrl from '../../config/ServerUrl'
-import DetailModal from '../../utils/DetailModal'
-import ConfirmationModal from '../../utils/ConfirmationModal'
-import DataCard from '../../utils/DataCard'
-import DetailHeader from '../../utils/DetailHeader'
-import ItemDetailCard from '../../utils/ItemDetailCard'
-import { format } from 'date-fns'
+  Alert,
+  Animated
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import { useSelector } from 'react-redux';
+import { ROLES } from '../../auth/role';
+import ServerUrl from '../../config/ServerUrl';
+import DetailModal from '../../utils/DetailModal';
+import ConfirmationModal from '../../utils/ConfirmationModal';
+import DataCard from '../../utils/DataCard';
+import DetailHeader from '../../utils/DetailHeader';
+import ItemDetailCard from '../../utils/ItemDetailCard';
+import SearchBar from '../../utils/SearchBar';
+import { format } from 'date-fns';
 
 const formatDate = dateString => {
-  const date = new Date(dateString)
-  return format(date, 'dd-MM-yyyy')
-}
+  const date = new Date(dateString);
+  return format(date, 'dd-MM-yyyy');
+};
 
 const IssueGeneralData = ({ navigation }) => {
-  const [data, setData] = useState([])
-  const [page, setPage] = useState(1)
-  const [limit] = useState(8)
-  const [hasMore, setHasMore] = useState(true)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedIssue, setSelectedIssue] = useState(null)
-  const [confirmVisible, setConfirmVisible] = useState(false)
-  const [deleteId, setDeleteId] = useState(null)
-  const userRole = useSelector(state => state?.auth?.user?.role)
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const userRole = useSelector(state => state?.auth?.user?.role);
 
-  const fetchIssues = async (page, limit) => {
+  const fetchIssues = async (pageNumber = 1, searchQuery = '') => {
     try {
-      const token = await SecureStore.getItemAsync('token')
-      if (!token) throw new Error('No token found')
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) throw new Error('No token found');
 
-      const response = await axios.get(
-        `${ServerUrl}/issueGeneral/get-issue-general?page=${page}&limit=${limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+      const endpoint = searchQuery
+        ? '/issueGeneral/searchIssueGeneral'
+        : '/issueGeneral/get-issue-general';
+
+      const response = await axios.get(ServerUrl + endpoint, {
+        params: {
+          ...(searchQuery && { issueNumber: searchQuery }),
+          page: pageNumber,
+          limit
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      )
+      });
 
-      return response.data.data || [] // Adjust to your server's response structure
+      if (response.data.message) {
+        throw new Error(response.data.message);
+      }
+
+      return response.data.data || []; // Adjust to your server's response structure
     } catch (error) {
-      console.error(error)
-      return []
+      console.error(error);
+      throw error;
     }
-  }
+  };
 
   const loadInitial = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const initialData = await fetchIssues(1, limit)
-      setData(initialData)
-      setHasMore(initialData.length >= limit)
+      const initialData = await fetchIssues(1, searchQuery);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+      setErrorMessage('');
     } catch (error) {
-      console.error(error)
-      setData([])
-      Alert.alert('Error', 'Failed to load data')
+      setData([]);
+      setErrorMessage('No Entry Found');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLoadMore = async () => {
-    if (!hasMore || isFetchingMore) return
-    setIsFetchingMore(true)
+    if (!hasMore || isFetchingMore) return;
+    setIsFetchingMore(true);
 
     try {
-      const nextPage = page + 1
-      const nextPageData = await fetchIssues(nextPage, limit)
-      setData(prev => [...prev, ...nextPageData])
-      setPage(nextPage)
-      setHasMore(nextPageData.length >= limit)
+      const nextPage = page + 1;
+      const nextPageData = await fetchIssues(nextPage, searchQuery);
+      setData(prev => [...prev, ...nextPageData]);
+      setPage(nextPage);
+      setHasMore(nextPageData.length >= limit);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
-      setIsFetchingMore(false)
+      setIsFetchingMore(false);
     }
-  }
+  };
 
   const onRefresh = async () => {
-    setRefreshing(true)
-    setPage(1)
+    setRefreshing(true);
+    setPage(1);
     try {
-      const initialData = await fetchIssues(1, limit)
-      setData(initialData)
-      setHasMore(initialData.length >= limit)
+      const initialData = await fetchIssues(1, searchQuery);
+      setData(initialData);
+      setHasMore(initialData.length >= limit);
+      setErrorMessage('');
     } catch (error) {
-      console.error(error)
+      setData([]);
+      setErrorMessage(error.message || 'Failed to load data');
     } finally {
-      setRefreshing(false)
+      setRefreshing(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadInitial()
-  }, [])
+    loadInitial();
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }).start();
+    }
+  }, [loading]);
 
   const handleDelete = async issueId => {
     try {
-      const token = await SecureStore.getItemAsync('token')
+      const token = await SecureStore.getItemAsync('token');
       await axios.delete(`${ServerUrl}/issueGeneral/delete-issue-general`, {
         data: { id: issueId },
         headers: {
           Authorization: `Bearer ${token}`
         }
-      })
-      Alert.alert('Success', 'Issue deleted successfully')
-      setData(prevData => prevData.filter(item => item._id !== issueId))
+      });
+      Alert.alert('Success', 'Issue deleted successfully');
+      setData(prevData => prevData.filter(item => item._id !== issueId));
     } catch (error) {
-      console.error(error)
-      Alert.alert('Error', 'Failed to delete issue')
+      console.error(error);
+      Alert.alert('Error', 'Failed to delete issue');
     } finally {
-      setConfirmVisible(false)
+      setConfirmVisible(false);
     }
-  }
+  };
 
   const confirmDelete = id => {
-    setDeleteId(id)
-    setConfirmVisible(true)
-  }
+    setDeleteId(id);
+    setConfirmVisible(true);
+  };
 
   const closeConfirmModal = () => {
-    setConfirmVisible(false)
-    setDeleteId(null)
-  }
+    setConfirmVisible(false);
+    setDeleteId(null);
+  };
 
   const handleEdit = issue => {
-    navigation.navigate('IssueGeneralEdit', { issue })
-  }
+    navigation.navigate('IssueGeneralEdit', { issue });
+  };
 
   const handleShow = issue => {
-    setSelectedIssue(issue)
-    setModalVisible(true)
-  }
+    setSelectedIssue(issue);
+    setModalVisible(true);
+  };
 
   const closeModal = () => {
-    setModalVisible(false)
-    setSelectedIssue(null)
-  }
+    setModalVisible(false);
+    setSelectedIssue(null);
+  };
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <DataCard
       item={item}
-      titleKey={item.grnNumber ? 'grnNumber' : '_id'}
+      titleKey={'issueNumber' }
       subtitleKey='issueDate'
       fields={[
         { label: 'Store', key: 'store' },
@@ -170,17 +197,17 @@ const IssueGeneralData = ({ navigation }) => {
           ? [
               {
                 label: 'Show',
-                handler: handleShow,
+                handler: () => handleShow(item),
                 style: { backgroundColor: '#3182ce' }
               },
               {
                 label: 'Edit',
-                handler: handleEdit,
+                handler: () => handleEdit(item),
                 style: { backgroundColor: '#2b6cb0' }
               },
               {
                 label: 'Delete',
-                handler: confirmDelete,
+                handler: () => confirmDelete(item._id),
                 style: { backgroundColor: '#e53e3e' }
               }
             ]
@@ -188,7 +215,7 @@ const IssueGeneralData = ({ navigation }) => {
       }
       onPress={() => handleShow(item)}
     />
-  )
+  );
 
   return (
     <View style={styles.container}>
@@ -201,34 +228,42 @@ const IssueGeneralData = ({ navigation }) => {
         </View>
       )}
 
+      <SearchBar onSearch={setSearchQuery} />
+
       {loading ? (
         <ActivityIndicator size='large' color='#1b1f26' />
       ) : (
-        <FlatList
-          data={data}
-          renderItem={renderItem}
-          keyExtractor={item => item._id}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          onEndReached={hasMore ? handleLoadMore : undefined}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={() => (
-            <ActivityIndicator
-              style={{ marginVertical: 20 }}
-              size='large'
-              color='#1b1f26'
-              animating={isFetchingMore}
+        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+          {errorMessage ? (
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+          ) : (
+            <FlatList
+              data={data}
+              renderItem={renderItem}
+              keyExtractor={item => item._id}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              onEndReached={hasMore ? handleLoadMore : undefined}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={() => (
+                <ActivityIndicator
+                  style={{ marginVertical: 20 }}
+                  size='large'
+                  color='#1b1f26'
+                  animating={isFetchingMore}
+                />
+              )}
+              ListEmptyComponent={
+                !loading && (
+                  <Text style={{ textAlign: 'center', color: '#666' }}>
+                    No issues found
+                  </Text>
+                )
+              }
             />
           )}
-          ListEmptyComponent={
-            !loading && (
-              <Text style={{ textAlign: 'center', color: '#666' }}>
-                No issues found
-              </Text>
-            )
-          }
-        />
+        </Animated.View>
       )}
 
       {selectedIssue && (
@@ -236,10 +271,13 @@ const IssueGeneralData = ({ navigation }) => {
           visible={modalVisible}
           onClose={closeModal}
           title='Issue Details'
-        >
+        >{selectedIssue.grnNumber && (  <DetailHeader
+          title={'GRN Number'}
+          value={selectedIssue.grnNumber}
+        />)}
           <DetailHeader
-            title={selectedIssue.grnNumber ? 'GRN Number' : 'Issue ID'}
-            value={selectedIssue.grnNumber || selectedIssue._id}
+            title={'Issue Number'}
+            value={selectedIssue.issueNumber}
           />
           <DetailHeader
             title='Issue Date'
@@ -275,7 +313,7 @@ const IssueGeneralData = ({ navigation }) => {
                 { label: 'Action', value: row.action },
                 { label: 'Serial No', value: row.serialNo },
                 {
-                  label: 'Level 3 Item Category',
+                  label: 'Item Category',
                   value: row.level3ItemCategory
                 },
                 { label: 'Item Name', value: row.itemName },
@@ -299,8 +337,8 @@ const IssueGeneralData = ({ navigation }) => {
         message='Are you sure you want to delete this issue?'
       />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -317,7 +355,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginLeft: 10
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#dc2626',
+    textAlign: 'center',
+    marginTop: 20
   }
-})
+});
 
-export default IssueGeneralData
+export default IssueGeneralData;
