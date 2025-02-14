@@ -1,28 +1,26 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import axios from 'axios';
+import { format } from 'date-fns';
+import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Animated,
   FlatList,
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
-  Animated
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { useSelector } from 'react-redux';
 import { ROLES } from '../../auth/role';
 import ServerUrl from '../../config/ServerUrl';
-import DetailModal from '../../utils/DetailModal';
 import ConfirmationModal from '../../utils/ConfirmationModal';
 import DataCard from '../../utils/DataCard';
 import DetailHeader from '../../utils/DetailHeader';
+import DetailModal from '../../utils/DetailModal';
 import ItemDetailCard from '../../utils/ItemDetailCard';
 import SearchBar from '../../utils/SearchBar';
-import { format } from 'date-fns';
 
 const formatDate = dateString => {
   const date = new Date(dateString);
@@ -219,14 +217,7 @@ const IssueGeneralData = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {userRole !== ROLES.VIEW_ONLY && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('IssueGeneral')}>
-            <Ionicons name='arrow-back' size={24} color='black' />
-          </TouchableOpacity>
-          <Text style={styles.header}>Issue General Data</Text>
-        </View>
-      )}
+      
 
       <SearchBar onSearch={setSearchQuery} />
 

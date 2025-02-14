@@ -342,7 +342,13 @@ const GRNReturnGeneral = ({ navigation }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false)
-    navigation.navigate('GRNReturnGeneralData')
+    navigation.navigate('GRNReturnTabs', {
+      screen: 'GRNReturnData',
+
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })
   }
 
   return (
@@ -369,14 +375,7 @@ const GRNReturnGeneral = ({ navigation }) => {
       />
       <ReusableButton onPress={addRow} text='Add Row' />
       <ReusableButton onPress={handleSubmit} loading={loading} text='Submit' />
-      <ReusableButton
-        onPress={() => navigation.navigate('GRNReturnGeneralData')}
-        text='Show GRN Return General Data'
-      />
-      <ReusableButton
-        onPress={() => navigation.navigate('GRNReturnGeneralPDF')}
-        text='Generate PDF Report'
-      />
+    
       <ReusableModal
         visible={successModalVisible}
         onClose={handleSuccessModalClose}

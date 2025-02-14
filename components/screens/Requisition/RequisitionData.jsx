@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons'
 import axios from 'axios'
 import { format } from 'date-fns'
 import * as SecureStore from 'expo-secure-store'
@@ -9,7 +8,6 @@ import {
   LayoutAnimation,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View
 } from 'react-native'
 import { useSelector } from 'react-redux'
@@ -150,14 +148,6 @@ const RequisitionData = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header Section */}
-      {userRole !== ROLES.VIEW_ONLY && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name='arrow-back' size={24} color='#1a365d' />
-          </TouchableOpacity>
-          <Text style={styles.header}>Requisition Data</Text>
-        </View>
-      )}
 
       {/* Search Section */}
       <SearchBar onSearch={handleSearch} />

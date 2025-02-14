@@ -271,7 +271,14 @@ const IssueGeneral = ({ navigation }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false);
-    navigation.navigate("IssueGeneralData");
+    navigation.navigate("IssueTabs",{
+      screen: 'IssueData',
+      
+        params: {
+          shouldRefresh: true // Optional: Add any refresh flags if needed
+        }
+      
+    });
   };
 
   return (
@@ -316,11 +323,7 @@ const IssueGeneral = ({ navigation }) => {
       />
       <ReusableButton onPress={addRow} text="Add Row" />
       <ReusableButton onPress={handleSubmit} loading={loading} text="Submit" />
-      <ReusableButton onPress={() => navigation.navigate("IssueGeneralData")} text="Show Issue General Data" />
-      <ReusableButton
-      onPress={() => navigation.navigate('IssueGeneralPDF')}
-      text="Generate PDF Report"
-    />
+
       <ReusableModal
         visible={successModalVisible}
         onClose={handleSuccessModalClose}

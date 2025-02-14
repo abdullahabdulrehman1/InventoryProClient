@@ -305,12 +305,12 @@ const GRNGeneralEdit = ({ navigation, route }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false)
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'GRNGeneralData' }]
-      })
-    )
+    navigation.navigate('GRNTabs',{
+      screen: 'Data',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })
   }
 
   return (
@@ -320,7 +320,12 @@ const GRNGeneralEdit = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('GRNGeneral')}>
+          <TouchableOpacity onPress={() => navigation.navigate('GRNTabs',{
+      screen: 'GRNData',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })}>
             <Ionicons name='arrow-back' size={24} color='black' />
           </TouchableOpacity>
           <Text style={styles.header}>GRN General Edit</Text>

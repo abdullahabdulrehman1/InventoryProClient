@@ -1,13 +1,14 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet,View,Text, TouchableOpacity } from 'react-native';
 import FormFields from '../../common/FormFields';
 import FormRows from '../../common/FormRows';
 import ServerUrl from '../../config/ServerUrl';
 import { validateForm, validationMethods } from '../../utils/formValidation';
 import ReusableButton from '../../utils/reusableButton';
 import ReusableModal from '../../utils/ReusableModal';
+import { Ionicons } from '@expo/vector-icons';
 
 const IssueGeneralEdit = ({ navigation, route }) => {
   const { issue } = route.params; // Assuming issue data is passed via route params
@@ -440,11 +441,29 @@ const IssueGeneralEdit = ({ navigation, route }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false);
-    navigation.navigate('IssueGeneralData');
+    navigation.navigate("IssueTabs",{
+      screen: 'IssueData',
+    
+        params: {
+          shouldRefresh: true // Optional: Add any refresh flags if needed
+        
+      }
+    });
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+       <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate('IssueTabs',{
+      screen: 'IssueData',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })}>
+            <Ionicons name='arrow-back' size={24} color='black' />
+          </TouchableOpacity>
+          <Text style={styles.header}>Issue General Edit</Text>
+        </View>
       <FormFields
         fields={formFields}
         values={{
@@ -513,10 +532,7 @@ const IssueGeneralEdit = ({ navigation, route }) => {
       />
       <ReusableButton onPress={addRow} text='Add Row' />
       <ReusableButton onPress={handleSubmit} loading={loading} text='Submit' />
-      <ReusableButton
-        onPress={() => navigation.navigate('IssueGeneralData')}
-        text='Show Issue General Data'
-      />
+   
       <ReusableModal
         visible={successModalVisible}
         onClose={handleSuccessModalClose}
@@ -556,6 +572,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center'
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 10
+  },
+  
   buttonText: {
     color: '#fff',
     fontSize: 16

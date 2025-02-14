@@ -40,3 +40,6 @@ yarn-error.*
 .env
 yarn.lock
 package-lock.json
+yarn.lock
+package-lock.json
+yarn.lock

@@ -198,7 +198,12 @@ const GRNGeneral = ({ navigation }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false);
-    navigation.navigate("GRNGeneralData");
+    navigation.navigate('GRNTabs',{
+      screen: 'GRNData',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })
   };
 
   return (
@@ -223,8 +228,7 @@ const GRNGeneral = ({ navigation }) => {
         />
         <ReusableButton onPress={addRow} text="Add Row" loading={false} />
         <ReusableButton onPress={handleSubmit} text="Submit" loading={loading} />
-        <ReusableButton onPress={() => navigation.navigate("GRNGeneralData")} text="Show GRN General Data" />
-        <ReusableButton onPress={() => navigation.navigate('GRNPdfPage')} text="Generate PDF Report" />
+     
       </ScrollView>
 
       <ReusableModal

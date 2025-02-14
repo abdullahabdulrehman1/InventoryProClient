@@ -216,17 +216,7 @@ const GRNReturnGeneralData = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {userRole !== ROLES.VIEW_ONLY && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('GRNReturnGeneral')}
-          >
-            <Ionicons name='arrow-back' size={24} color='black' />
-          </TouchableOpacity>
-          <Text style={styles.header}>GRN Return General Data</Text>
-        </View>
-      )}
-
+      
       <SearchBar onSearch={setSearchQuery} />
 
       {loading ? (

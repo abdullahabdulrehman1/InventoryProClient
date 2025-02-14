@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons'
 import axios from 'axios'
 import { format } from 'date-fns'
 import * as SecureStore from 'expo-secure-store'
@@ -9,22 +8,20 @@ import {
   LayoutAnimation,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator
+  View
 } from 'react-native'
 import { useSelector } from 'react-redux'
 import { ROLES } from '../../auth/role'
 import ServerUrl from '../../config/ServerUrl'
-import DataCard from '../../utils/DataCard'
-import DetailModal from '../../utils/DetailModal'
-import ConfirmationModal from '../../utils/ConfirmationModal'
-import ItemDetailCard from '../../utils/ItemDetailCard'
-import DetailHeader from '../../utils/DetailHeader'
-import SearchBar from '../../utils/SearchBar'
-import SkeletonLoader from '../../ui/SkeletonLoader'
 import { animationStyles, skeletonStyles } from '../../styles/Animations'
+import SkeletonLoader from '../../ui/SkeletonLoader'
 import AnimatedLoader from '../../utils/AnimatedLoader'
+import ConfirmationModal from '../../utils/ConfirmationModal'
+import DataCard from '../../utils/DataCard'
+import DetailHeader from '../../utils/DetailHeader'
+import DetailModal from '../../utils/DetailModal'
+import ItemDetailCard from '../../utils/ItemDetailCard'
+import SearchBar from '../../utils/SearchBar'
 
 const POGeneralData = ({ navigation }) => {
   // State Management
@@ -147,15 +144,7 @@ const POGeneralData = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header Section */}
-      {userRole !== ROLES.VIEW_ONLY && (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('POGeneral')}>
-            <Ionicons name='arrow-back' size={24} color='black' />
-          </TouchableOpacity>
-          <Text style={styles.header}>PO General Data</Text>
-        </View>
-      )}
-
+     
       {/* Search Section */}
       <SearchBar onSearch={handleSearch} />
 

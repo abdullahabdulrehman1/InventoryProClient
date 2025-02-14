@@ -257,7 +257,12 @@ const POGeneralEdit = ({ navigation, route }) => {
 
   const handleSuccessModalClose = () => {
     setSuccessModalVisible(false);
-    navigation.navigate("POGeneralData");
+    navigation.navigate("POGTabs",{
+      screen: 'Data',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    });
   };
 
   const formFields = [
@@ -306,7 +311,12 @@ const POGeneralEdit = ({ navigation, route }) => {
     <View>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate("POGeneralData")}>
+          <TouchableOpacity onPress={() =>   navigation.navigate("POGTabs",{
+      screen: 'Data',
+      params: {
+        shouldRefresh: true // Optional: Add any refresh flags if needed
+      }
+    })}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.header}>Edit Purchase Order</Text>

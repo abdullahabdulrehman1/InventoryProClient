@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { format } from 'date-fns';
 import * as SecureStore from 'expo-secure-store';
@@ -10,8 +9,6 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View
 } from 'react-native';
 import { useSelector } from 'react-redux';
@@ -219,12 +216,7 @@ const GRNGeneralData = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header Section */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('GRNGeneral')}>
-          <Ionicons name='arrow-back' size={24} color='black' />
-        </TouchableOpacity>
-        <Text style={styles.header}>GRN General Data</Text>
-      </View>
+    
 
       {/* Search Section */}
       <SearchBar onSearch={handleSearch} />

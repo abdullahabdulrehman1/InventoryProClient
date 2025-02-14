@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Button,
+  KeyboardAvoidingView, Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -127,6 +128,11 @@ const RequisitionGeneral = ({ navigation }) => {
   };
 
   return (
+    <KeyboardAvoidingView
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    style={{ flex: 1 }}
+  >
+
     <View>
       <ScrollView
         style={styles.container}
@@ -167,22 +173,7 @@ const RequisitionGeneral = ({ navigation }) => {
             )}
           </TouchableOpacity>
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("RequisitionData")}
-          >
-            <Text style={styles.buttonText}>Show Requisition Data</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.pdfButton]}
-            onPress={() => navigation.navigate('RequisitionPDF')}
-          >
-            <Text style={styles.buttonText}>Generate PDF Report</Text>
-          </TouchableOpacity>
-        </View>
+      
       </ScrollView>
 
       <ReusableModal
@@ -193,10 +184,16 @@ const RequisitionGeneral = ({ navigation }) => {
         buttonText="OK"
         onButtonPress={() => {
           setSuccessModalVisible(false);
-          navigation.navigate("RequisitionData");
+          navigation.navigate('RequisitionTabs', {
+            screen: 'Data', // Name of your Form tab
+            params: {
+              shouldRefresh: true // Optional: Add any refresh flags if needed
+            }
+          })
         }}
       />
     </View>
+    </KeyboardAvoidingView>
   );
 };
 
